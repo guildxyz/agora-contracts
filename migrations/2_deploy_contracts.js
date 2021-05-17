@@ -8,7 +8,7 @@ const returnTokenSymbol = "AGT";
 const staking = artifacts.require("AgoraSpace");
 const returnToken = artifacts.require("AgoraToken");
 
-module.exports = async deployer  => {
+module.exports = async (deployer) => {
   // Deploy the returnToken and then the staking contract
   await deployer.deploy(returnToken, returnTokenName, returnTokenSymbol);
   await deployer.deploy(staking, stakeTokenAddress, returnToken.address);
