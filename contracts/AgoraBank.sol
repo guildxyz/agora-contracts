@@ -15,7 +15,7 @@ contract AgoraBank is Ownable {
         uint256 lockExpires;
         uint256 countRewardsFrom;
     }
-    mapping(uint256 => mapping(address => StakeItem)) private stakes; // communityId -> user -> stake
+    mapping(uint256 => mapping(address => StakeItem)) public stakes; // communityId -> user -> stake
 
     event Stake(uint256 communityId, address walletAddress, uint256 amount);
     event Withdraw(uint256 communityId, address walletAddress, uint256 amount);
