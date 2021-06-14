@@ -19,8 +19,8 @@ contract AgoraSpace is Ownable {
     mapping(address => LockedItem[]) public timelocks;
     uint256 public lockInterval = 10;
 
-    event Deposit(address account, uint256 amount);
-    event Withdraw(address account, uint256 amount);
+    event Deposit(address indexed wallet, uint256 amount);
+    event Withdraw(address indexed wallet, uint256 amount);
 
     /// @param _stakeTokenAddress The address of the token to be staked, that the contract accepts
     /// @param _returnTokenAddress The address of the token that's given in return

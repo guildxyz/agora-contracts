@@ -18,12 +18,12 @@ contract AgoraBank is Ownable {
     mapping(uint256 => mapping(address => StakeItem)) public stakes; // communityId -> user -> stake
     mapping(uint256 => address) public tokensOfCommunities; // communityId -> tokenAddress
 
-    event Stake(uint256 communityId, address walletAddress, uint256 amount);
-    event Withdraw(uint256 communityId, address walletAddress, uint256 amount);
+    event Deposit(uint256 indexed communityId, address indexed wallet, uint256 amount);
+    event Withdraw(uint256 indexed communityId, address indexed wallet, uint256 amount);
     event RewardChanged(uint256 newRewardPerBlock);
 
     /// @notice Stakes an ERC20 token, registers it and mints AGO in return.
-    function stake(uint256 _communityId, uint256 _amount) external {
+    function deposit(uint256 _communityId, uint256 _amount) external {
         IAgoraToken(agoAddress()).mint(msg.sender, _amount);
         // Claim rewards in the community
         uint256[] memory communityArray = new uint256[](1);
@@ -35,7 +35,7 @@ contract AgoraBank is Ownable {
         totalStakes += _amount;
         // Get the input token last to be protected from reentrancy
         IERC20(tokensOfCommunities[_communityId]).transferFrom(msg.sender, address(this), _amount);
-        emit Stake(_communityId, msg.sender, _amount);
+        emit Deposit(_communityId, msg.sender, _amount);
     }
 
     /// @notice Withdraws a certain amount of staked tokens if the timelock expired. No AGO is burned in the process.
