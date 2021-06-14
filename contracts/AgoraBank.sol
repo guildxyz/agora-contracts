@@ -16,17 +16,14 @@ contract AgoraBank is Ownable {
         uint256 countRewardsFrom;
     }
     mapping(uint256 => mapping(address => StakeItem)) public stakes; // communityId -> user -> stake
+    mapping(uint256 => address) public tokensOfCommunities; // communityId -> tokenAddress
 
     event Stake(uint256 communityId, address walletAddress, uint256 amount);
     event Withdraw(uint256 communityId, address walletAddress, uint256 amount);
     event RewardChanged(uint256 newRewardPerBlock);
 
-    /// @notice Stake an ERC20 token, register it and mint AGO in return.
-    function stake(
-        uint256 _communityId,
-        address _tokenAddress,
-        uint256 _amount
-    ) external {
+    /// @notice Stakes an ERC20 token, registers it and mints AGO in return.
+    function stake(uint256 _communityId, uint256 _amount) external {
         IAgoraToken(agoAddress()).mint(msg.sender, _amount);
         // Claim rewards in the community
         uint256[] memory communityArray = new uint256[](1);
@@ -37,16 +34,12 @@ contract AgoraBank is Ownable {
         stakes[_communityId][msg.sender].lockExpires = block.number + lockInterval;
         totalStakes += _amount;
         // Get the input token last to be protected from reentrancy
-        IERC20(_tokenAddress).transferFrom(msg.sender, address(this), _amount);
+        IERC20(tokensOfCommunities[_communityId]).transferFrom(msg.sender, address(this), _amount);
         emit Stake(_communityId, msg.sender, _amount);
     }
 
-    /// @notice Withdraw a certain amount of staked tokens if the timelock expired. No AGO is burned in the process.
-    function withdraw(
-        uint256 _communityId,
-        address _tokenAddress,
-        uint256 _amount
-    ) external {
+    /// @notice Withdraws a certain amount of staked tokens if the timelock expired. No AGO is burned in the process.
+    function withdraw(uint256 _communityId, uint256 _amount) external {
         StakeItem storage stakeData = stakes[_communityId][msg.sender];
         // Test timelock
         require(stakeData.lockExpires < block.number, "Stake still locked");
@@ -58,12 +51,12 @@ contract AgoraBank is Ownable {
         stakeData.amount -= _amount; // Will revert if the user tries to withdraw more than staked
         totalStakes -= _amount;
         // Send the staked token last to be protected from reentrancy
-        IERC20(_tokenAddress).transfer(msg.sender, _amount);
+        IERC20(tokensOfCommunities[_communityId]).transfer(msg.sender, _amount);
         emit Withdraw(_communityId, msg.sender, _amount);
     }
 
-    /// @notice Mint the reward for the sender based on a stake in an array of communities.
-    /// @dev The rewards will be calculated from the current block in these communities.
+    /// @notice Mints the reward for the sender based on a stake in an array of communities.
+    /// @dev The rewards will be calculated from the current block in these communities on the next call.
     function claimReward(uint256[] memory _communityIds) public {
         uint256 userStakes;
         uint256 elapsedBlocks;
@@ -79,15 +72,21 @@ contract AgoraBank is Ownable {
             IAgoraToken(agoAddress()).mint(msg.sender, (elapsedBlocks * rewardPerBlock * userStakes) / totalStakes);
     }
 
-    /// @notice The amount of AGO to be minted per block as a reward.
+    /// @notice Changes the amount of AGO to be minted per block as a reward.
     function changeRewardPerBlock(uint256 _rewardAmount) external onlyOwner {
         rewardPerBlock = _rewardAmount;
         emit RewardChanged(_rewardAmount);
     }
 
-    /// @notice Lock the stakes for a specific number of blocks.
+    /// @notice Changes the number of blocks the stakes will be locked for.
     function changeTimelockInterval(uint256 _blocks) external onlyOwner {
         lockInterval = _blocks;
+    }
+
+    /// @notice Changes the token that should be staked in the given community.
+    /// @dev It's best to use this if there are no current stakes in the given community.
+    function changeTokenOfCommunity(uint256 _communityId, address _tokenAddress) external onlyOwner {
+        tokensOfCommunities[_communityId] = _tokenAddress;
     }
 
     /// @notice The address of the token minted for staking.
