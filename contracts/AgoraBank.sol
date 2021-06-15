@@ -20,6 +20,7 @@ contract AgoraBank is Ownable {
 
     event Deposit(uint256 indexed communityId, address indexed wallet, uint256 amount);
     event Withdraw(uint256 indexed communityId, address indexed wallet, uint256 amount);
+    event RewardClaimed(uint256[] communityIds, address indexed wallet);
     event RewardChanged(uint256 newRewardPerBlock);
 
     /// @notice Stakes an ERC20 token, registers it and mints AGO in return.
@@ -55,7 +56,7 @@ contract AgoraBank is Ownable {
         emit Withdraw(_communityId, msg.sender, _amount);
     }
 
-    /// @notice Mints the reward for the sender based on a stake in an array of communities.
+    /// @notice Mints the reward for the sender based on the stakes in an array of communities.
     /// @dev The rewards will be calculated from the current block in these communities on the next call.
     function claimReward(uint256[] memory _communityIds) public {
         uint256 userStakes;
@@ -70,6 +71,7 @@ contract AgoraBank is Ownable {
         }
         if (userStakes > 0)
             IAgoraToken(agoAddress()).mint(msg.sender, (elapsedBlocks * rewardPerBlock * userStakes) / totalStakes);
+        emit RewardClaimed(_communityIds, msg.sender);
     }
 
     /// @notice Changes the amount of AGO to be minted per block as a reward.
@@ -87,6 +89,21 @@ contract AgoraBank is Ownable {
     /// @dev It's best to use this if there are no current stakes in the given community.
     function changeTokenOfCommunity(uint256 _communityId, address _tokenAddress) external onlyOwner {
         tokensOfCommunities[_communityId] = _tokenAddress;
+    }
+
+    /// @notice Calculates the reward for the sender based on the stakes in an array of communities.
+    /// @dev The same logic as in claimReward.
+    function getReward(uint256[] calldata _communityIds) external view returns (uint256) {
+        uint256 userStakes;
+        uint256 elapsedBlocks;
+        for (uint256 i = 0; i < _communityIds.length; i++) {
+            uint256 stakeInCommunity = stakes[_communityIds[i]][msg.sender].amount;
+            if (stakeInCommunity > 0) {
+                userStakes += stakeInCommunity;
+                elapsedBlocks += block.number - stakes[_communityIds[i]][msg.sender].countRewardsFrom;
+            }
+        }
+        return (elapsedBlocks * rewardPerBlock * userStakes) / totalStakes;
     }
 
     /// @notice The address of the token minted for staking.
