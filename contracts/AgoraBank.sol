@@ -16,16 +16,14 @@ contract AgoraBank is Ownable {
         uint256 countRewardsFrom;
     }
     mapping(uint256 => mapping(address => StakeItem)) public stakes; // communityId -> user -> stake
-    mapping(uint256 => address) public tokensOfCommunities; // communityId -> tokenAddress
 
     event Deposit(uint256 indexed communityId, address indexed wallet, uint256 amount);
     event Withdraw(uint256 indexed communityId, address indexed wallet, uint256 amount);
     event RewardClaimed(uint256[] communityIds, address indexed wallet);
     event RewardChanged(uint256 newRewardPerBlock);
 
-    /// @notice Stakes an ERC20 token, registers it and mints AGO in return.
+    /// @notice Stakes AGO token and registers it.
     function deposit(uint256 _communityId, uint256 _amount) external {
-        IAgoraToken(agoAddress()).mint(msg.sender, _amount);
         // Claim rewards in the community
         uint256[] memory communityArray = new uint256[](1);
         communityArray[0] = _communityId;
@@ -34,12 +32,12 @@ contract AgoraBank is Ownable {
         stakes[_communityId][msg.sender].amount += _amount;
         stakes[_communityId][msg.sender].lockExpires = block.number + lockInterval;
         totalStakes += _amount;
-        // Get the input token last to be protected from reentrancy
-        IERC20(tokensOfCommunities[_communityId]).transferFrom(msg.sender, address(this), _amount);
+        // Actually get the tokens
+        IAgoraToken(agoAddress()).transferFrom(msg.sender, address(this), _amount);
         emit Deposit(_communityId, msg.sender, _amount);
     }
 
-    /// @notice Withdraws a certain amount of staked tokens if the timelock expired. No AGO is burned in the process.
+    /// @notice Withdraws a certain amount of staked tokens if the timelock expired.
     function withdraw(uint256 _communityId, uint256 _amount) external {
         StakeItem storage stakeData = stakes[_communityId][msg.sender];
         // Test timelock
@@ -51,8 +49,8 @@ contract AgoraBank is Ownable {
         // Modify tne stake details
         stakeData.amount -= _amount; // Will revert if the user tries to withdraw more than staked
         totalStakes -= _amount;
-        // Send the staked token last to be protected from reentrancy
-        IERC20(tokensOfCommunities[_communityId]).transfer(msg.sender, _amount);
+        // // Actually send the withdraw amount
+        IAgoraToken(agoAddress()).transfer(msg.sender, _amount);
         emit Withdraw(_communityId, msg.sender, _amount);
     }
 
@@ -83,12 +81,6 @@ contract AgoraBank is Ownable {
     /// @notice Changes the number of blocks the stakes will be locked for.
     function changeTimelockInterval(uint256 _blocks) external onlyOwner {
         lockInterval = _blocks;
-    }
-
-    /// @notice Changes the token that should be staked in the given community.
-    /// @dev It's best to use this if there are no current stakes in the given community.
-    function changeTokenOfCommunity(uint256 _communityId, address _tokenAddress) external onlyOwner {
-        tokensOfCommunities[_communityId] = _tokenAddress;
     }
 
     /// @notice Calculates the reward for the sender based on the stakes in an array of communities.
