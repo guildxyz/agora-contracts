@@ -12,8 +12,8 @@ contract AgoraBank is Ownable {
 
     struct StakeItem {
         uint256 amount;
-        uint256 lockExpires;
-        uint256 countRewardsFrom;
+        uint128 lockExpires;
+        uint128 countRewardsFrom;
     }
     mapping(uint256 => mapping(address => StakeItem)) public stakes; // communityId -> user -> stake
 
@@ -30,7 +30,7 @@ contract AgoraBank is Ownable {
         claimReward(communityArray);
         // Register the stake details
         stakes[_communityId][msg.sender].amount += _amount;
-        stakes[_communityId][msg.sender].lockExpires = block.number + lockInterval;
+        stakes[_communityId][msg.sender].lockExpires = uint128(block.number + lockInterval);
         totalStakes += _amount;
         // Actually get the tokens
         IAgoraToken(agoAddress()).transferFrom(msg.sender, address(this), _amount);
@@ -65,7 +65,7 @@ contract AgoraBank is Ownable {
                 userStakes += stakeInCommunity;
                 elapsedBlocks += block.number - stakes[_communityIds[i]][msg.sender].countRewardsFrom;
             }
-            stakes[_communityIds[i]][msg.sender].countRewardsFrom = block.number;
+            stakes[_communityIds[i]][msg.sender].countRewardsFrom = uint128(block.number);
         }
         if (userStakes > 0)
             IAgoraToken(agoAddress()).mint(msg.sender, (elapsedBlocks * rewardPerBlock * userStakes) / totalStakes);
