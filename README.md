@@ -29,7 +29,7 @@ Before deployment, you can rename the _AgoraSpace_ contract to include the accep
 Open _migrations/4_deploy_space.js_. Notice the top two constants:
 
 ```javascript
-const stakeTokenAddress = "";
+const stakeTokenAddress = "INSERT_HERE";
 const returnTokenName = "Agora.space Token";
 ```
 
@@ -39,7 +39,13 @@ Edit them according to your needs.
 
 ### Agora Bank contract
 
-Open _contracts/AgoraBank.sol_ and search for the function `agoAddress()`. Replace the address in it's return statement with the Agora Member Token's (AGO) address. **If this step is omitted, the contract becomes unusable!** This needs to be done like this in order to be able to save gas later on each transaction made to the contract.
+Open _migrations/3_deploy_Bank.js_. Notice the constant at the top:
+
+```javascript
+const agoAddress = "INSERT_HERE";
+```
+
+Change it to the address of the token to be staked (Agora Member Token - AGO).
 
 ## Deployment
 

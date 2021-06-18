@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title The central contract of agora.space, keeping track of the community member limits and distributing rewards.
 contract AgoraBank is Ownable {
+    address public immutable agoAddress;
     uint256 public rewardPerBlock = 100000000000000000; // 0.1 AGO by default
     uint256 public lockInterval = 586868; // by default around 90 days with 13.25s block time
     uint256 public totalStakes;
@@ -22,6 +23,11 @@ contract AgoraBank is Ownable {
     event RewardClaimed(uint256[] communityIds, address indexed wallet);
     event RewardChanged(uint256 newRewardPerBlock);
 
+    /// @notice Sets the address of the token minted for staking.
+    constructor(address _agoAddress) {
+        agoAddress = _agoAddress;
+    }
+
     /// @notice Stakes AGO token and registers it.
     function deposit(uint256 _communityId, uint256 _amount) external {
         // Claim rewards in the community
@@ -33,7 +39,7 @@ contract AgoraBank is Ownable {
         stakes[_communityId][msg.sender].lockExpires = uint128(block.number + lockInterval);
         totalStakes += _amount;
         // Actually get the tokens
-        IAgoraToken(agoAddress()).transferFrom(msg.sender, address(this), _amount);
+        IAgoraToken(agoAddress).transferFrom(msg.sender, address(this), _amount);
         emit Deposit(_communityId, msg.sender, _amount);
     }
 
@@ -50,7 +56,7 @@ contract AgoraBank is Ownable {
         stakeData.amount -= _amount; // Will revert if the user tries to withdraw more than staked
         totalStakes -= _amount;
         // // Actually send the withdraw amount
-        IAgoraToken(agoAddress()).transfer(msg.sender, _amount);
+        IAgoraToken(agoAddress).transfer(msg.sender, _amount);
         emit Withdraw(_communityId, msg.sender, _amount);
     }
 
@@ -68,7 +74,7 @@ contract AgoraBank is Ownable {
             stakes[_communityIds[i]][msg.sender].countRewardsFrom = uint128(block.number);
         }
         if (userStakes > 0)
-            IAgoraToken(agoAddress()).mint(msg.sender, (elapsedBlocks * rewardPerBlock * userStakes) / totalStakes);
+            IAgoraToken(agoAddress).mint(msg.sender, (elapsedBlocks * rewardPerBlock * userStakes) / totalStakes);
         emit RewardClaimed(_communityIds, msg.sender);
     }
 
@@ -96,11 +102,5 @@ contract AgoraBank is Ownable {
             }
         }
         return (elapsedBlocks * rewardPerBlock * userStakes) / totalStakes;
-    }
-
-    /// @notice The address of the token minted for staking.
-    /// @dev Change before deploying. Also, this contract has to be able to mint it.
-    function agoAddress() public pure returns (address) {
-        return 0x0000000000000000000000000000000000000000;
     }
 }

@@ -8,8 +8,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @dev Conventially, this should be renamed to include the name of the token it receives, e.g. AgoraWETHSpace for WETH
 contract AgoraSpace is Ownable {
     // Tokens managed by the contract
-    IERC20 internal stakeToken;
-    IAgoraToken internal returnToken;
+    address internal immutable stakeToken;
+    address internal immutable returnToken;
 
     // For timelock
     struct LockedItem {
@@ -25,8 +25,8 @@ contract AgoraSpace is Ownable {
     /// @param _stakeTokenAddress The address of the token to be staked, that the contract accepts
     /// @param _returnTokenAddress The address of the token that's given in return
     constructor(address _stakeTokenAddress, address _returnTokenAddress) {
-        stakeToken = IERC20(_stakeTokenAddress);
-        returnToken = IAgoraToken(_returnTokenAddress);
+        stakeToken = _stakeTokenAddress;
+        returnToken = _returnTokenAddress;
     }
 
     /// @notice Accepts tokens, locks them and gives different tokens in return
@@ -36,8 +36,8 @@ contract AgoraSpace is Ownable {
     function deposit(uint256 _amount) external {
         require(_amount > 0, "Non-positive deposit amount");
         require(timelocks[msg.sender].length < 600, "Too many consecutive deposits");
-        stakeToken.transferFrom(msg.sender, address(this), _amount);
-        returnToken.mint(msg.sender, _amount);
+        IERC20(stakeToken).transferFrom(msg.sender, address(this), _amount);
+        IAgoraToken(returnToken).mint(msg.sender, _amount);
         LockedItem memory timelockData;
         timelockData.expires = block.timestamp + lockInterval * 1 minutes;
         timelockData.amount = _amount;
@@ -51,13 +51,16 @@ contract AgoraSpace is Ownable {
     /// @param _amount The amount to be withdrawn in the smallest unit of the token
     function withdraw(uint256 _amount) external {
         require(_amount > 0, "Non-positive withdraw amount");
-        require(returnToken.allowance(msg.sender, address(this)) >= _amount, "Token allowance not sufficient");
         require(
-            returnToken.balanceOf(msg.sender) - getLockedAmount(msg.sender) >= _amount,
+            IAgoraToken(returnToken).allowance(msg.sender, address(this)) >= _amount,
+            "Token allowance not sufficient"
+        );
+        require(
+            IAgoraToken(returnToken).balanceOf(msg.sender) - getLockedAmount(msg.sender) >= _amount,
             "Not enough unlocked tokens"
         );
-        returnToken.burn(msg.sender, _amount);
-        stakeToken.transfer(msg.sender, _amount);
+        IAgoraToken(returnToken).burn(msg.sender, _amount);
+        IERC20(stakeToken).transfer(msg.sender, _amount);
         emit Withdraw(msg.sender, _amount);
     }
 
