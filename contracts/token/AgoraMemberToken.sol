@@ -13,8 +13,13 @@ contract AgoraMemberToken is ERC20, AccessControl {
      * The deployer should grant it to governance and revoke it from themselves.
      * The governance should then grant the MINTER_ROLE to the contracts that need it.
      */
-    constructor(string memory _name, string memory _symbol) ERC20(_name, _symbol) {
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint256 _initialSupply
+    ) ERC20(_name, _symbol) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _mint(msg.sender, _initialSupply);
     }
 
     /// @notice Mints tokens to an account

@@ -22,6 +22,26 @@ Pull the repository from GitHub, then install its dependencies by executing this
 npm install
 ```
 
+### Agora Member Token contract
+
+Open _migrations/2_deploy_ago.js_. Notice the constant at the top:
+
+```javascript
+const initialSupply = 0;
+```
+
+Change it to the amount of the token's initial supply in wei.
+
+### Agora Bank contract
+
+Open _migrations/3_deploy_bank.js_. Notice the constant at the top:
+
+```javascript
+const agoAddress = "INSERT_HERE";
+```
+
+Change it to the address of the token to be staked (Agora Member Token - AGO).
+
 ### Agora Space contract
 
 Before deployment, you can rename the _AgoraSpace_ contract to include the accepted token's name or symbol. For WETH, the name could be AgoraWETHSpace.
@@ -36,16 +56,6 @@ const returnTokenName = "Agora.space Token";
 Edit them according to your needs.  
 `stakeTokenAddress` is the address of the token to be staked.  
 `returnTokenName` is the name of the token that will be given in return for staking. Conventionally, it should include the name or symbol of the stakeToken, e.g for WETH it should be Agora.space WETH Token.
-
-### Agora Bank contract
-
-Open _migrations/3_deploy_Bank.js_. Notice the constant at the top:
-
-```javascript
-const agoAddress = "INSERT_HERE";
-```
-
-Change it to the address of the token to be staked (Agora Member Token - AGO).
 
 ## Deployment
 
@@ -83,11 +93,11 @@ If the script fails before starting the deployment, you might need to run the fi
 
 ## After deployment
 
-### Agora Space contract
-
-The deployment script should automatically transfer it's token's ownership to the AgoraSpace contract. If it fails to do so, it should be transferred manually.
-
 ### Agora Member Token contract
 
 Initially, the DEFAULT_ADMIN_ROLE is granted to the deployer. Ideally, if the deployer is not the governance wallet, they should grant the role to the governance and revoke from themselves. Then, the governance should grant the MINTER_ROLE to the Agora Bank contract. If a new version of Agora Bank is deployed, the governance is able to grant it the role, too.  
 The DEFAULT_ADMIN_ROLE is not able to mint tokens, only the MINTER_ROLE is. Ideally, only the different versions of Bank contracts have it. If it's granted to any other address, the security might be at risk. To get the addresses that received the role, listen for the `RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)` event.
+
+### Agora Space contract
+
+The deployment script should automatically transfer it's token's ownership to the AgoraSpace contract. If it fails to do so, it should be transferred manually.
