@@ -89,4 +89,5 @@ The deployment script should automatically transfer it's token's ownership to th
 
 ### Agora Member Token contract
 
-Initially, the minter role is granted to the deployer. Ideally, if the deployer is not the governance wallet, they should grant the role to the governance and revoke from themselves. Then, the governance should grant the role to the Agora Bank contract. If a new version of Agora Bank is deployed, the governance is able to grant it the role, too.
+Initially, the DEFAULT_ADMIN_ROLE is granted to the deployer. Ideally, if the deployer is not the governance wallet, they should grant the role to the governance and revoke from themselves. Then, the governance should grant the MINTER_ROLE to the Agora Bank contract. If a new version of Agora Bank is deployed, the governance is able to grant it the role, too.  
+The DEFAULT_ADMIN_ROLE is not able to mint tokens, only the MINTER_ROLE is. Ideally, only the different versions of Bank contracts have it. If it's granted to any other address, the security might be at risk. To get the addresses that received the role, listen for the `RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)` event.
