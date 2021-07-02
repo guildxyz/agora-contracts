@@ -4,7 +4,7 @@ pragma solidity 0.8.6;
 import "./token/IAgoraToken.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-/// @title The central contract of agora.space, keeping track of the community member limits and distributing rewards.
+/// @title The central contract of agora.space, keeping track of the community member limits and distributing rewards
 contract AgoraBank is Ownable {
     address public immutable agoAddress;
     uint256 public rewardPerBlock = 100000000000000000; // 0.1 AGO by default
@@ -23,12 +23,14 @@ contract AgoraBank is Ownable {
     event RewardClaimed(uint256[] communityIds, address indexed wallet);
     event RewardChanged(uint256 newRewardPerBlock);
 
-    /// @notice Sets the address of the token minted for staking.
+    /// @notice Sets the address of the token minted for staking
     constructor(address _agoAddress) {
         agoAddress = _agoAddress;
     }
 
-    /// @notice Stakes AGO token and registers it.
+    /// @notice Stakes AGO token and registers it. Claims rewards automatically
+    /// @param _communityId The community's id, to which the stake will belong to
+    /// @param _amount The amount to stake.
     function deposit(uint256 _communityId, uint256 _amount) external {
         // Claim rewards in the community
         uint256[] memory communityArray = new uint256[](1);
@@ -43,7 +45,9 @@ contract AgoraBank is Ownable {
         emit Deposit(_communityId, msg.sender, _amount);
     }
 
-    /// @notice Withdraws a certain amount of staked tokens if the timelock expired.
+    /// @notice Withdraws a certain amount of staked tokens if the timelock expired. Claims rewards automatically
+    /// @param _communityId The community's id, to which the stake belongs
+    /// @param _amount The amount to unstake
     function withdraw(uint256 _communityId, uint256 _amount) external {
         StakeItem storage stakeData = stakes[_communityId][msg.sender];
         // Test timelock
@@ -60,8 +64,9 @@ contract AgoraBank is Ownable {
         emit Withdraw(_communityId, msg.sender, _amount);
     }
 
-    /// @notice Mints the reward for the sender based on the stakes in an array of communities.
-    /// @dev The rewards will be calculated from the current block in these communities on the next call.
+    /// @notice Mints the reward for the sender based on the stakes in an array of communities
+    /// @dev The rewards will be calculated from the current block in these communities on the next call
+    /// @param _communityIds An array of those communities' id's, where the staking reward should be claimed
     function claimReward(uint256[] memory _communityIds) public {
         uint256 userStakes;
         uint256 elapsedBlocks;
@@ -78,19 +83,22 @@ contract AgoraBank is Ownable {
         emit RewardClaimed(_communityIds, msg.sender);
     }
 
-    /// @notice Changes the amount of AGO to be minted per block as a reward.
+    /// @notice Changes the amount of AGO to be minted per block as a reward
+    /// @param _rewardAmount The amount of AGO in wei
     function changeRewardPerBlock(uint256 _rewardAmount) external onlyOwner {
         rewardPerBlock = _rewardAmount;
         emit RewardChanged(_rewardAmount);
     }
 
-    /// @notice Changes the number of blocks the stakes will be locked for.
+    /// @notice Changes the number of blocks the stakes will be locked for
+    /// @param _blocks The number of blocks
     function changeTimelockInterval(uint256 _blocks) external onlyOwner {
         lockInterval = _blocks;
     }
 
-    /// @notice Calculates the reward for the sender based on the stakes in an array of communities.
-    /// @dev The same logic as in claimReward.
+    /// @notice Calculates the reward for the sender based on the stakes in an array of communities
+    /// @dev The same logic as in claimReward
+    /// @param _communityIds An array of those communities' id's, where the staking reward should be calculated
     function getReward(uint256[] calldata _communityIds) external view returns (uint256) {
         uint256 userStakes;
         uint256 elapsedBlocks;
