@@ -5,11 +5,10 @@ import "./token/IAgoraToken.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title A contract for staking tokens
-/// @dev Conventially, this should be renamed to include the name of the token it receives, e.g. AgoraWETHSpace for WETH
 contract AgoraSpace is Ownable {
     // Tokens managed by the contract
-    address internal immutable stakeToken;
-    address internal immutable returnToken;
+    address public immutable stakeToken;
+    address public immutable returnToken;
 
     // For timelock
     struct LockedItem {
@@ -36,12 +35,12 @@ contract AgoraSpace is Ownable {
     function deposit(uint256 _amount) external {
         require(_amount > 0, "Non-positive deposit amount");
         require(timelocks[msg.sender].length < 600, "Too many consecutive deposits");
-        IERC20(stakeToken).transferFrom(msg.sender, address(this), _amount);
-        IAgoraToken(returnToken).mint(msg.sender, _amount);
         LockedItem memory timelockData;
         timelockData.expires = block.timestamp + lockInterval * 1 minutes;
         timelockData.amount = _amount;
         timelocks[msg.sender].push(timelockData);
+        IAgoraToken(returnToken).mint(msg.sender, _amount);
+        IERC20(stakeToken).transferFrom(msg.sender, address(this), _amount);
         emit Deposit(msg.sender, _amount);
     }
 
@@ -51,10 +50,6 @@ contract AgoraSpace is Ownable {
     /// @param _amount The amount to be withdrawn in the smallest unit of the token
     function withdraw(uint256 _amount) external {
         require(_amount > 0, "Non-positive withdraw amount");
-        require(
-            IAgoraToken(returnToken).allowance(msg.sender, address(this)) >= _amount,
-            "Token allowance not sufficient"
-        );
         require(
             IAgoraToken(returnToken).balanceOf(msg.sender) - getLockedAmount(msg.sender) >= _amount,
             "Not enough unlocked tokens"
@@ -74,7 +69,7 @@ contract AgoraSpace is Ownable {
     /// @param _investor The address whose tokens should be checked
     /// @return The amount of locked tokens
     function getLockedAmount(address _investor) public returns (uint256) {
-        uint256 lockedAmount = 0;
+        uint256 lockedAmount;
         LockedItem[] storage usersLocked = timelocks[_investor];
         int256 usersLockedLength = int256(usersLocked.length);
         uint256 blockTimestamp = block.timestamp;

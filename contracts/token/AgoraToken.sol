@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @title A mintable ERC20 token used by agora.space
 contract AgoraToken is ERC20, Ownable {
-    uint8 private tokenDecimals;
+    uint8 private immutable tokenDecimals;
 
     constructor(
         string memory _name,

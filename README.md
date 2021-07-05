@@ -44,8 +44,6 @@ Change it to the address of the token to be staked (Agora Member Token - AGO).
 
 ### Agora Space contract
 
-Before deployment, you can rename the _AgoraSpace_ contract to include the accepted token's name or symbol. For WETH, the name could be AgoraWETHSpace.
-
 Open _migrations/4_deploy_space.js_. Notice the top two constants:
 
 ```javascript
