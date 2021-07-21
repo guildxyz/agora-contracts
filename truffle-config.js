@@ -23,30 +23,32 @@ module.exports = {
       port: 8545, // Standard port (default: none)
       network_id: "*", // Any network (default: none)
     },
-    bsctest: {
+    // One might need to adjust the gasPrice for some chains. The default value is 20 gwei.
+    ethereum: {
       provider: () =>
         new HDWalletProvider({
           mnemonic: mnemonic,
-          providerOrUrl: `https://data-seed-prebsc-1-s1.binance.org:8545`,
-          chainId: 97,
+          providerOrUrl: `wss://mainnet.infura.io/ws/v3/${infuraKey}`,
+          chainId: 1,
         }),
-      network_id: 97,
+      network_id: 1,
       gas: 3000000,
-      confirmations: 10,
-      networkCheckTimeout: 5000,
+      confirmations: 2,
+      networkCheckTimeout: 9000000,
       timeoutBlocks: 200,
       skipDryRun: true,
     },
-    bsc: {
+    kovan: {
       provider: () =>
         new HDWalletProvider({
           mnemonic: mnemonic,
-          providerOrUrl: `https://bsc-dataseed1.binance.org`,
-          chainId: 56,
+          providerOrUrl: `wss://kovan.infura.io/ws/v3/${infuraKey}`,
+          chainId: 42,
         }),
-      network_id: 56,
+      network_id: 42,
       gas: 3000000,
-      confirmations: 10,
+      confirmations: 2,
+      networkCheckTimeout: 90000,
       timeoutBlocks: 200,
       skipDryRun: true,
     },
@@ -64,32 +66,57 @@ module.exports = {
       timeoutBlocks: 200, // # of blocks before a deployment times out  (minimum/default: 50)
       skipDryRun: true, // Skip dry run before migrations? (default: false for public nets )
     },
-    kovan: {
+    bsc: {
       provider: () =>
         new HDWalletProvider({
           mnemonic: mnemonic,
-          providerOrUrl: `wss://kovan.infura.io/ws/v3/${infuraKey}`,
-          chainId: 42,
+          providerOrUrl: `https://bsc-dataseed1.binance.org`,
+          chainId: 56,
         }),
-      network_id: 42,
+      network_id: 56,
       gas: 3000000,
-      confirmations: 2,
-      networkCheckTimeout: 90000,
+      confirmations: 10,
       timeoutBlocks: 200,
       skipDryRun: true,
     },
-    // For ethereum, gasPrice might need to be set manually
-    ethereum: {
+    bsctest: {
       provider: () =>
         new HDWalletProvider({
           mnemonic: mnemonic,
-          providerOrUrl: `wss://mainnet.infura.io/ws/v3/${infuraKey}`,
-          chainId: 1,
+          providerOrUrl: `https://data-seed-prebsc-1-s1.binance.org:8545`,
+          chainId: 97,
         }),
-      network_id: 1,
+      network_id: 97,
+      gas: 3000000,
+      confirmations: 10,
+      networkCheckTimeout: 5000,
+      timeoutBlocks: 200,
+      skipDryRun: true,
+    },
+    polygon: {
+      provider: () =>
+        new HDWalletProvider({
+          mnemonic: mnemonic,
+          providerOrUrl: `wss://ws-matic-mainnet.chainstacklabs.com`,
+          chainId: 137,
+        }),
+      network_id: 137,
+      gas: 3000000,
+      gasPrice: 5000000000,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: true,
+    },
+    mumbai: {
+      provider: () =>
+        new HDWalletProvider({
+          mnemonic: mnemonic,
+          providerOrUrl: `https://rpc-mumbai.matic.today`,
+          chainId: 80001,
+        }),
+      network_id: 80001,
       gas: 3000000,
       confirmations: 2,
-      networkCheckTimeout: 9000000,
       timeoutBlocks: 200,
       skipDryRun: true,
     },
