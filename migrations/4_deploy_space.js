@@ -32,5 +32,7 @@ module.exports = async (deployer) => {
   console.log("Transferring the token's ownership to the Agora Space contract...");
   const stakeTokenInstance = await stakeToken.deployed();
   await stakeTokenInstance.transferOwnership(staking.address);
-  const newOwner = stakeTokenInstance.owner();
+  const newOwner = await stakeTokenInstance.owner();
+  if (newOwner === staking.address) console.log("Agora Token's ownership successfully transferred.");
+  else console.log(`You need to transfer Agora Token's ownership to ${staking.address} manually`);
 };
