@@ -7,8 +7,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @title A contract for staking tokens
 contract AgoraSpace is Ownable {
     // Tokens managed by the contract
+    address public immutable token;
     address public immutable stakeToken;
-    address public immutable returnToken;
 
     // For timelock
     struct LockedItem {
@@ -21,16 +21,16 @@ contract AgoraSpace is Ownable {
     event Deposit(address indexed wallet, uint256 amount);
     event Withdraw(address indexed wallet, uint256 amount);
 
-    /// @param _stakeTokenAddress The address of the token to be staked, that the contract accepts
-    /// @param _returnTokenAddress The address of the token that's given in return
-    constructor(address _stakeTokenAddress, address _returnTokenAddress) {
+    /// @param _tokenAddress The address of the token to be staked, that the contract accepts
+    /// @param _stakeTokenAddress The address of the token that's given in return
+    constructor(address _tokenAddress, address _stakeTokenAddress) {
+        token = _tokenAddress;
         stakeToken = _stakeTokenAddress;
-        returnToken = _returnTokenAddress;
     }
 
     /// @notice Accepts tokens, locks them and gives different tokens in return
     /// @dev The depositor should approve the contract to manage stakingTokens
-    /// @dev For minting returnTokens, this contract should be the owner of them
+    /// @dev For minting stakeTokens, this contract should be the owner of them
     /// @param _amount The amount to be deposited in the smallest unit of the token
     function deposit(uint256 _amount) external {
         require(_amount > 0, "Non-positive deposit amount");
@@ -39,23 +39,23 @@ contract AgoraSpace is Ownable {
         timelockData.expires = block.timestamp + lockInterval * 1 minutes;
         timelockData.amount = _amount;
         timelocks[msg.sender].push(timelockData);
-        IAgoraToken(returnToken).mint(msg.sender, _amount);
-        IERC20(stakeToken).transferFrom(msg.sender, address(this), _amount);
+        IAgoraToken(stakeToken).mint(msg.sender, _amount);
+        IERC20(token).transferFrom(msg.sender, address(this), _amount);
         emit Deposit(msg.sender, _amount);
     }
 
     /// @notice If the timelock is expired, gives back the staked tokens in return for the tokens obtained while depositing
-    /// @dev This contract should have sufficient allowance to be able to burn returnTokens from the user
-    /// @dev For burning returnTokens, this contract should be the owner of them
+    /// @dev This contract should have sufficient allowance to be able to burn stakeTokens from the user
+    /// @dev For burning stakeTokens, this contract should be the owner of them
     /// @param _amount The amount to be withdrawn in the smallest unit of the token
     function withdraw(uint256 _amount) external {
         require(_amount > 0, "Non-positive withdraw amount");
         require(
-            IAgoraToken(returnToken).balanceOf(msg.sender) - getLockedAmount(msg.sender) >= _amount,
+            IAgoraToken(stakeToken).balanceOf(msg.sender) - getLockedAmount(msg.sender) >= _amount,
             "Not enough unlocked tokens"
         );
-        IAgoraToken(returnToken).burn(msg.sender, _amount);
-        IERC20(stakeToken).transfer(msg.sender, _amount);
+        IAgoraToken(stakeToken).burn(msg.sender, _amount);
+        IERC20(token).transfer(msg.sender, _amount);
         emit Withdraw(msg.sender, _amount);
     }
 

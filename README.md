@@ -47,13 +47,13 @@ Change it to the address of the token to be staked (Agora Member Token - AGO).
 Open _migrations/4_deploy_space.js_. Notice the top two constants:
 
 ```javascript
-const stakeTokenAddress = "INSERT_HERE";
-const returnTokenName = "Agora.space Token";
+const tokenAddress = "INSERT_HERE";
+const stakeTokenName = "Agora.space Token";
 ```
 
 Edit them according to your needs.  
-`stakeTokenAddress` is the address of the token to be staked.  
-`returnTokenName` is the name of the token that will be given in return for staking. Conventionally, it should include the name or symbol of the stakeToken, e.g for WETH it should be Agora.space WETH Token.
+`tokenAddress` is the address of the token to be staked.  
+`stakeTokenName` is the name of the token that will be given in return for staking. Conventionally, it should include the name or symbol of the stakeToken, e.g for WETH it should be Agora.space WETH Token.
 
 ## Deployment
 
