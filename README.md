@@ -101,3 +101,11 @@ The DEFAULT_ADMIN_ROLE is not able to mint tokens, only the MINTER_ROLE is. Idea
 ### Agora Space contract
 
 The deployment script should automatically transfer it's token's ownership to the AgoraSpace contract. If it fails to do so, it should be transferred manually.
+
+## Tests
+
+To run the unit tests written for this project, execute this command:
+
+```bash
+npm test
+```
