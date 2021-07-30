@@ -34,12 +34,12 @@ contract("AgoraSpace", async function (accounts) {
   });
 
   context("state variables", async function () {
-    xit("should return the token's address", async function () {
+    it("should return the token's address", async function () {
       const result = await this.space.token();
       expect(result).to.equal(this.token.address);
     });
 
-    xit("should return the stakeToken's address", async function () {
+    it("should return the stakeToken's address", async function () {
       const result = await this.space.stakeToken();
       expect(result).to.equal(this.stakeToken.address);
     });
