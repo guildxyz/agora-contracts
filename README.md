@@ -109,3 +109,9 @@ To run the unit tests written for this project, execute this command:
 ```bash
 npm test
 ```
+
+To run the unit tests only in a specific file, just append the path to the command. For example, to run tests just for the Agora Space contract:
+
+```bash
+npm test ./test/AgoraSpaceTest.js
+```
