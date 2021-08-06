@@ -115,3 +115,5 @@ To run the unit tests only in a specific file, just append the path to the comma
 ```bash
 npm test ./test/AgoraSpaceTest.js
 ```
+
+Note: there's a disabled test in _AgoraSpaceTest.js_. It's because it executes 600 transactions and that takes a long time. Remove the `x` before the test's declaration to run it.
