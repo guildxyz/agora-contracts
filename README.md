@@ -9,7 +9,7 @@ The Agora Bank contract provides a way to stake tokens in order to extend a comm
 To run the project you need:
 
 - [Node.js 12.x](https://nodejs.org/download/release/latest-v12.x) development environment.
-- [Truffle](https://www.trufflesuite.com/truffle) for compiling and deploying.
+- [Truffle](https://www.trufflesuite.com/truffle) for compiling, deploying and testing.
 - (optional) Local [Ganache](https://www.trufflesuite.com/ganache) environment installed with `npm install -g ganache-cli` for local testing.
 - (optional) A file named `.mnemonic` in the root folder with your 12-word MetaMask seedphrase for deploying.
 - (optional) A file named `.infura` in the root folder with your [Infura](https://infura.io) project ID for deploying to Ethereum networks.
@@ -101,3 +101,25 @@ The DEFAULT_ADMIN_ROLE is not able to mint tokens, only the MINTER_ROLE is. Idea
 ### Agora Space contract
 
 The deployment script should automatically transfer it's token's ownership to the AgoraSpace contract. If it fails to do so, it should be transferred manually.
+
+## Tests
+
+Before running the unit tests written for this project, start Ganache with this command:
+
+```bash
+ganache-cli
+```
+
+To run the unit tests, leave Ganache running and execute this command in a separate terminal:
+
+```bash
+npm test
+```
+
+To run the unit tests only in a specific file, just append the path to the command. For example, to run tests just for the Agora Space contract:
+
+```bash
+npm test ./test/AgoraSpaceTest.js
+```
+
+Note: there's a disabled test in _AgoraSpaceTest.js_. It's because it executes 600 transactions and that takes a long time. Remove the `x` before the test's declaration to run it.
