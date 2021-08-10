@@ -2,6 +2,7 @@
 
 The smart contracts in this repository are being used by [agora.space](https://agora.space).  
 The Agora Space contract provides a way to lock tokens for a period of time. Agora Tokens are minted in exchange for the deposited assets that can be swapped back again after their timelock has expired. A detailed article written about the timelock implementation is available [here](https://github.com/zgendao/agora.space/wiki/Timelock-implementation-possibilities-in-smart-contracts).  
+The Agora Space Factory contract is able to deploy Agora Space and Agora Token contracts in a single transaction, just by specifying the community's token.  
 The Agora Bank contract provides a way to stake tokens in order to extend a community's space's capacity. Agora Member Tokens are minted in exchange. Rewards are distributed proportionately per block.
 
 ## Requirements
@@ -54,6 +55,10 @@ const stakeTokenName = "Agora.space Token";
 Edit them according to your needs.  
 `tokenAddress` is the address of the token to be staked.  
 `stakeTokenName` is the name of the token that will be given in return for staking. Conventionally, it should include the name or symbol of the stakeToken, e.g for WETH it should be Agora.space WETH Token.
+
+### Agora Space Factory contract
+
+Optimization needs to be enabled in _truffle-config.js_ (200 runs).
 
 ## Deployment
 
