@@ -14,13 +14,12 @@ contract AgoraSpaceFactory is Ownable {
     mapping(address => address) public spaces;
 
     event SpaceCreated(address token, address space, address agoraToken);
-    event AddressApproved(address account, address token, bool approvalState);
+    event AddressApproved(address indexed account, address token, bool approvalState);
 
     /// @notice Deploys a new Agora Space contract with it's token and registers it in the spaces mapping
     /// @param _token The address of the community's token (that will be deposited to Space)
     function createSpace(address _token) external {
         require(approvedAddresses[msg.sender][_token], "Sender not authorized");
-        require(_token != address(0), "Token address is zero");
         require(spaces[_token] == address(0), "Space aleady exists");
         string memory tokenSymbol = IERC20Metadata(_token).symbol();
         uint8 tokenDecimals = IERC20Metadata(_token).decimals();
@@ -45,7 +44,8 @@ contract AgoraSpaceFactory is Ownable {
         address _tokenAddress,
         bool _approvalState
     ) external onlyOwner {
+        require((_tokenOwner != address(0)) && (_tokenAddress != address(0)), "Zero address received");
         approvedAddresses[_tokenOwner][_tokenAddress] = _approvalState;
-        emit AddressApproved(msg.sender, _tokenAddress, _approvalState);
+        emit AddressApproved(_tokenOwner, _tokenAddress, _approvalState);
     }
 }
