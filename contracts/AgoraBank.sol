@@ -23,6 +23,8 @@ contract AgoraBank is Ownable {
     event RewardClaimed(uint256[] communityIds, address indexed wallet);
     event RewardChanged(uint256 newRewardPerBlock);
 
+    error StakeNotExpired();
+
     /// @notice Sets the address of the token minted for staking
     constructor(address _agoAddress) {
         agoAddress = _agoAddress;
@@ -51,7 +53,7 @@ contract AgoraBank is Ownable {
     function withdraw(uint256 _communityId, uint256 _amount) external {
         StakeItem storage stakeData = stakes[_communityId][msg.sender];
         // Test timelock
-        require(stakeData.lockExpires < block.number, "Stake still locked");
+        if (stakeData.lockExpires >= block.number) revert StakeNotExpired();
         // Claim rewards in the community
         uint256[] memory communityArray = new uint256[](1);
         communityArray[0] = _communityId;
