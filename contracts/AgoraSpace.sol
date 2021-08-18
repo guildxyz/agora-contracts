@@ -43,6 +43,17 @@ contract AgoraSpace is Ownable {
     event NewRank(uint256 minDuration, uint256 goalAmount, uint256 id);
     event ModifyRank(uint256 minDuration, uint256 goalAmount, uint256 id);
 
+    error InsufficientBalance(uint256 rankId, uint256 available, uint256 required);
+    error TooManyRanks();
+    error NoRanks();
+    error InvalidRank();
+    error NewDurationTooShort(uint256 value, uint256 minValue);
+    error NewDurationTooLong(uint256 value, uint256 maxValue);
+    error NewGoalTooSmall(uint256 value, uint256 minValue);
+    error NewGoalTooBig(uint256 value, uint256 maxValue);
+    error TooManyDeposits();
+    error NonPositiveAmount();
+
     /// @param _tokenAddress The address of the token to be staked, that the contract accepts
     /// @param _stakeTokenAddress The address of the token that's given in return
     constructor(address _tokenAddress, address _stakeTokenAddress) {
@@ -56,10 +67,12 @@ contract AgoraSpace is Ownable {
     /// @param _minDuration The duration of the lock
     /// @param _goalAmount The amount of tokens needed to reach the rank
     function addRank(uint256 _minDuration, uint256 _goalAmount) external onlyOwner {
-        require(numOfRanks < 256, "Too many ranks");
+        if (numOfRanks >= 255) revert TooManyRanks();
         if (numOfRanks >= 1) {
-            require(ranks[numOfRanks - 1].goalAmount <= _goalAmount, "Goal amount is too small");
-            require(ranks[numOfRanks - 1].minDuration <= _minDuration, "Duration is too short");
+            if (ranks[numOfRanks - 1].goalAmount > _goalAmount)
+                revert NewGoalTooSmall({value: _goalAmount, minValue: ranks[numOfRanks - 1].goalAmount});
+            if (ranks[numOfRanks - 1].minDuration > _minDuration)
+                revert NewDurationTooShort({value: _minDuration, minValue: ranks[numOfRanks - 1].minDuration});
         }
         ranks[numOfRanks] = (Rank(_minDuration, _goalAmount));
         emit NewRank(_minDuration, _goalAmount, numOfRanks);
@@ -76,19 +89,20 @@ contract AgoraSpace is Ownable {
         uint256 _goalAmount,
         uint256 _id
     ) external onlyOwner {
-        require(numOfRanks > 0, "There are no ranks");
-        require(_id <= numOfRanks - 1, "Rank doesn't exist");
-
+        if (numOfRanks < 1) revert NoRanks();
+        if (_id >= numOfRanks) revert InvalidRank();
         if (_id > 0) {
-            require(ranks[_id - 1].goalAmount <= _goalAmount, "New goal amount is too small");
-            require(ranks[_id - 1].minDuration <= _minDuration, "New duration is too short");
+            if (ranks[_id - 1].goalAmount > _goalAmount)
+                revert NewGoalTooSmall({value: _goalAmount, minValue: ranks[numOfRanks - 1].goalAmount});
+            if (ranks[numOfRanks - 1].minDuration > _minDuration)
+                revert NewDurationTooShort({value: _minDuration, minValue: ranks[numOfRanks - 1].minDuration});
         }
-
         if (_id < numOfRanks - 1) {
-            require(ranks[_id + 1].goalAmount >= _goalAmount, "New goal amount is too big");
-            require(ranks[_id + 1].minDuration >= _minDuration, "New duration is too long");
+            if (ranks[_id + 1].goalAmount < _goalAmount)
+                revert NewGoalTooBig({value: _goalAmount, maxValue: ranks[_id + 1].goalAmount});
+            if (ranks[_id + 1].minDuration < _minDuration)
+                revert NewDurationTooLong({value: _minDuration, maxValue: ranks[_id + 1].minDuration});
         }
-
         ranks[_id] = Rank(_minDuration, _goalAmount);
         emit ModifyRank(_minDuration, _goalAmount, _id);
     }
@@ -104,10 +118,10 @@ contract AgoraSpace is Ownable {
         uint256 _rankId,
         bool _consolidate
     ) external {
-        require(_amount > 0, "Non-positive deposit amount");
-        require(timelocks[msg.sender].length < 600, "Too many consecutive deposits");
-        require(numOfRanks > 0, "There are no ranks");
-        require(_rankId <= numOfRanks - 1, "Invalid rank");
+        if (_amount < 1) revert NonPositiveAmount();
+        if (timelocks[msg.sender].length >= 600) revert TooManyDeposits();
+        if (numOfRanks < 1) revert NoRanks();
+        if (_rankId >= numOfRanks) revert InvalidRank();
         if (
             rankBalances[_rankId][msg.sender].unlocked + rankBalances[_rankId][msg.sender].locked + _amount >=
             ranks[_rankId].goalAmount
@@ -133,9 +147,14 @@ contract AgoraSpace is Ownable {
     /// @param _amount The amount to be withdrawn in the smallest unit of the token
     /// @param _rankId The id of the rank to be withdrawn from
     function withdraw(uint256 _amount, uint256 _rankId) external {
-        require(_amount > 0, "Non-positive withdraw amount");
+        if (_amount < 1) revert NonPositiveAmount();
         uint256 expired = viewExpired(msg.sender, _rankId);
-        require(rankBalances[_rankId][msg.sender].unlocked + expired >= _amount, "Not enough unlocked tokens");
+        if (rankBalances[_rankId][msg.sender].unlocked + expired < _amount)
+            revert InsufficientBalance({
+                rankId: _rankId,
+                available: rankBalances[_rankId][msg.sender].unlocked + expired,
+                required: _amount
+            });
         unlockExpired(msg.sender);
         rankBalances[_rankId][msg.sender].unlocked -= _amount;
         IAgoraToken(stakeToken).burn(msg.sender, _amount);
