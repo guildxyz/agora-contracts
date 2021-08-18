@@ -181,10 +181,7 @@ contract("AgoraBank", async function (accounts) {
 
   context("withdrawing", async function () {
     it("should revert if the tokens are not unlocked yet", async function () {
-      await expectRevert(
-        this.bank.withdraw(this.firstCommunity, new BN(1), { from: accounts[0] }),
-        "Stake still locked"
-      );
+      await expectRevert.unspecified(this.bank.withdraw(this.firstCommunity, new BN(1), { from: accounts[0] }));
     });
 
     it("should not revert after the tokens are unlocked", async function () {
