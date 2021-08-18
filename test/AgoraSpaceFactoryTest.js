@@ -37,18 +37,14 @@ contract("AgoraSpaceFactory", async function (accounts) {
 
     it("should revert if the token owner is the zero address", async function () {
       await factory.setApproval(accounts[0], sampleToken.address, true, { from: accounts[0] });
-      await expectRevert(
-        factory.setApproval(constants.ZERO_ADDRESS, sampleToken.address, { from: accounts[0] }),
-        "Zero address received"
+      await expectRevert.unspecified(
+        factory.setApproval(constants.ZERO_ADDRESS, sampleToken.address, { from: accounts[0] })
       );
     });
 
     it("should revert if the token address is the zero address", async function () {
       await factory.setApproval(accounts[0], sampleToken.address, true, { from: accounts[0] });
-      await expectRevert(
-        factory.setApproval(accounts[0], constants.ZERO_ADDRESS, { from: accounts[0] }),
-        "Zero address received"
-      );
+      await expectRevert.unspecified(factory.setApproval(accounts[0], constants.ZERO_ADDRESS, { from: accounts[0] }));
     });
 
     it("should set approved state", async function () {
@@ -84,12 +80,12 @@ contract("AgoraSpaceFactory", async function (accounts) {
     });
 
     it("should revert when called by a not approved address", async function () {
-      await expectRevert(factory.createSpace(sampleToken.address, { from: accounts[1] }), "Sender not authorized");
+      await expectRevert.unspecified(factory.createSpace(sampleToken.address, { from: accounts[1] }));
     });
 
     it("should revert when trying to create a space if the community already has one", async function () {
       await factory.createSpace(sampleToken.address, { from: accounts[0] });
-      await expectRevert(factory.createSpace(sampleToken.address, { from: accounts[0] }), "Space aleady exists");
+      await expectRevert.unspecified(factory.createSpace(sampleToken.address, { from: accounts[0] }));
     });
 
     context("the created Agora Token contract", async function () {
