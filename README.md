@@ -56,10 +56,6 @@ Edit them according to your needs.
 `tokenAddress` is the address of the token to be staked.  
 `stakeTokenName` is the name of the token that will be given in return for staking. Conventionally, it should include the name or symbol of the stakeToken, e.g for WETH it should be Agora.space WETH Token.
 
-### Agora Space Factory contract
-
-Optimization needs to be enabled in _truffle-config.js_ (200 runs).
-
 ## Deployment
 
 To deploy the smart contracts to a network, replace _[name]_ in this command:
