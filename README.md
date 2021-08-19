@@ -2,6 +2,7 @@
 
 The smart contracts in this repository are being used by [agora.space](https://agora.space).  
 The Agora Space contract provides a way to lock tokens for a period of time. Agora Tokens are minted in exchange for the deposited assets that can be swapped back again after their timelock has expired. A detailed article written about the timelock implementation is available [here](https://github.com/zgendao/agora.space/wiki/Timelock-implementation-possibilities-in-smart-contracts).  
+The Agora Space Factory contract is able to deploy Agora Space and Agora Token contracts in a single transaction, just by specifying the community's token.  
 The Agora Bank contract provides a way to stake tokens in order to extend a community's space's capacity. Agora Member Tokens are minted in exchange. Rewards are distributed proportionately per block.
 
 ## Requirements
