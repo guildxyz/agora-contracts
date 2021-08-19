@@ -11,7 +11,7 @@ contract AgoraSpace is Ownable {
     address public immutable stakeToken;
 
     // For timelock
-    mapping(address => LockedItem[]) public timelocks;
+    mapping(address => LockedItem[]) internal timelocks;
 
     struct LockedItem {
         uint256 expires;
@@ -298,5 +298,12 @@ contract AgoraSpace is Ownable {
             }
             timelocks[_investor].push(timelockData);
         }
+    }
+
+    /// @notice Returns all the timelocks a user has in an array
+    /// @param _wallet The address of the user
+    /// @return An array containing structs with fields "expires", "amount" and "rankId"
+    function getTimelocks(address _wallet) external view returns (LockedItem[] memory) {
+        return timelocks[_wallet];
     }
 }

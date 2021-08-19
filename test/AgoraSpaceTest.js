@@ -18,7 +18,6 @@ contract("AgoraSpace", async function (accounts) {
     this.token = await tokenContract.new("OwoToken", "OWO", ether("300"));
     this.stakeToken = await stakeTokenContract.new("AgoraToken", "AGT", 18);
     this.space = await spaceContract.new(this.token.address, this.stakeToken.address);
-    this.timelockDuration = new BN(10);
     // Transfer ownership, approve tokens for the first three accounts and fund them
     await Promise.all([
       this.stakeToken.transferOwnership(this.space.address, { from: accounts[0] }),
@@ -126,7 +125,8 @@ contract("AgoraSpace", async function (accounts) {
         const block = await web3.eth.getBlock(blockNumber);
         const rank = await this.space.ranks(i);
         const rankBalance = await this.space.rankBalances(i, accounts[0]);
-        const timelockEntry = await this.space.timelocks(accounts[0], i);
+        const timelocks = await this.space.getTimelocks(accounts[0]);
+        const timelockEntry = timelocks[i];
         expect(timelockEntry.expires).to.bignumber.equal(new BN(block.timestamp + rank.minDuration * 60));
         expect(timelockEntry.amount).to.bignumber.equal(this.oneToken);
         expect(timelockEntry.rankId).to.bignumber.equal(new BN(i));
