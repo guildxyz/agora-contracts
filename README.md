@@ -12,8 +12,13 @@ To run the project you need:
 - [Node.js 12.x](https://nodejs.org/download/release/latest-v12.x) development environment.
 - [Truffle](https://www.trufflesuite.com/truffle) for compiling, deploying and testing.
 - (optional) Local [Ganache](https://www.trufflesuite.com/ganache) environment installed with `npm install -g ganache-cli` for local testing.
-- (optional) A file named `.mnemonic` in the root folder with your 12-word MetaMask seedphrase for deploying.
-- (optional) A file named `.infura` in the root folder with your [Infura](https://infura.io) project ID for deploying to Ethereum networks.
+- (optional) A file named `.env`
+
+Your `.env` file should contain any of the following:
+
+- Your 12-word MetaMask seedphrase for deploying. e.g. MNEMONIC='seedphrase'
+- Your [Infura](https://infura.io) project ID for deploying to Ethereum networks. e.g. INFURA_ID='id'
+- Your API keys for verification. e.g. ETHERSCAN_API_KEY='api key'
 
 ## Before deployment
 
@@ -93,6 +98,14 @@ Replace _[start]_ with the number of the first and _[end]_ with the number of th
 If the script fails before starting the deployment, you might need to run the first one, too.
 
 ## After deployment
+
+### Verification
+
+For automatic verification you can use [truffle plugin verify](https://github.com/rkalis/truffle-plugin-verify).
+
+```bash
+truffle run verify AgoraSpace --network ropsten
+```
 
 ### Agora Member Token contract
 

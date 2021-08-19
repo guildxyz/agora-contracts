@@ -1,7 +1,5 @@
 const HDWalletProvider = require("@truffle/hdwallet-provider");
-const fs = require("fs");
-const mnemonic = fs.readFileSync(".mnemonic").toString().trim();
-const infuraKey = fs.existsSync(".infura") ? fs.readFileSync(".infura").toString().trim() : undefined;
+require("dotenv").config();
 
 module.exports = {
   /**
@@ -27,8 +25,8 @@ module.exports = {
     ethereum: {
       provider: () =>
         new HDWalletProvider({
-          mnemonic: mnemonic,
-          providerOrUrl: `wss://mainnet.infura.io/ws/v3/${infuraKey}`,
+          mnemonic: process.env.MNEMONIC,
+          providerOrUrl: `wss://mainnet.infura.io/ws/v3/${process.env.INFURA_ID}`,
           chainId: 1,
         }),
       network_id: 1,
@@ -41,8 +39,8 @@ module.exports = {
     kovan: {
       provider: () =>
         new HDWalletProvider({
-          mnemonic: mnemonic,
-          providerOrUrl: `wss://kovan.infura.io/ws/v3/${infuraKey}`,
+          mnemonic: process.env.MNEMONIC,
+          providerOrUrl: `wss://kovan.infura.io/ws/v3/${process.env.INFURA_ID}`,
           chainId: 42,
         }),
       network_id: 42,
@@ -55,8 +53,8 @@ module.exports = {
     ropsten: {
       provider: () =>
         new HDWalletProvider({
-          mnemonic: mnemonic,
-          providerOrUrl: `wss://ropsten.infura.io/ws/v3/${infuraKey}`,
+          mnemonic: process.env.MNEMONIC,
+          providerOrUrl: `wss://ropsten.infura.io/ws/v3/${process.env.INFURA_ID}`,
           chainId: 3,
         }),
       network_id: 3, // Ropsten's id
@@ -69,7 +67,7 @@ module.exports = {
     bsc: {
       provider: () =>
         new HDWalletProvider({
-          mnemonic: mnemonic,
+          mnemonic: process.env.MNEMONIC,
           providerOrUrl: `https://bsc-dataseed1.binance.org`,
           chainId: 56,
         }),
@@ -82,10 +80,11 @@ module.exports = {
     bsctest: {
       provider: () =>
         new HDWalletProvider({
-          mnemonic: mnemonic,
+          mnemonic: process.env.MNEMONIC,
           providerOrUrl: `https://data-seed-prebsc-1-s1.binance.org:8545`,
           chainId: 97,
         }),
+      from: "0x216c2218eC309312a05b067B5D2DB88c48112CDf",
       network_id: 97,
       gas: 3500000,
       confirmations: 10,
@@ -96,7 +95,7 @@ module.exports = {
     polygon: {
       provider: () =>
         new HDWalletProvider({
-          mnemonic: mnemonic,
+          mnemonic: process.env.MNEMONIC,
           providerOrUrl: `wss://ws-matic-mainnet.chainstacklabs.com`,
           chainId: 137,
         }),
@@ -110,7 +109,7 @@ module.exports = {
     mumbai: {
       provider: () =>
         new HDWalletProvider({
-          mnemonic: mnemonic,
+          mnemonic: process.env.MNEMONIC,
           providerOrUrl: `https://rpc-mumbai.matic.today`,
           chainId: 80001,
         }),
@@ -144,5 +143,13 @@ module.exports = {
         //  evmVersion: "byzantium"
       },
     },
+  },
+
+  plugins: ["truffle-plugin-verify"],
+
+  api_keys: {
+    etherscan: process.env.ETHERSCAN_API_KEY,
+    bscscan: process.env.BSCSCAN_API_KEY,
+    polygonscan: process.env.POLYGONSCAN_API_KEY,
   },
 };
