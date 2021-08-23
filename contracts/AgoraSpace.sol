@@ -10,6 +10,9 @@ contract AgoraSpace is Ownable {
     address public immutable token;
     address public immutable stakeToken;
 
+    // For emergencies
+    bool public frozen = false;
+
     // For timelock
     mapping(address => LockedItem[]) internal timelocks;
 
@@ -42,6 +45,9 @@ contract AgoraSpace is Ownable {
     event Withdraw(address indexed wallet, uint256 amount);
     event NewRank(uint256 minDuration, uint256 goalAmount, uint256 id);
     event ModifyRank(uint256 minDuration, uint256 goalAmount, uint256 id);
+    event SpaceFrozen();
+    event SpaceThawed();
+    event EmergencyWithdraw(address indexed wallet, uint256 amount);
 
     error InsufficientBalance(uint256 rankId, uint256 available, uint256 required);
     error TooManyRanks();
@@ -53,6 +59,13 @@ contract AgoraSpace is Ownable {
     error NewGoalTooBig(uint256 value, uint256 maxValue);
     error TooManyDeposits();
     error NonPositiveAmount();
+    error SpaceIsFrozen();
+    error SpaceIsNotFrozen();
+
+    modifier notFrozen() {
+        if (frozen) revert SpaceIsFrozen();
+        _;
+    }
 
     /// @param _tokenAddress The address of the token to be staked, that the contract accepts
     /// @param _stakeTokenAddress The address of the token that's given in return
@@ -117,7 +130,7 @@ contract AgoraSpace is Ownable {
         uint256 _amount,
         uint256 _rankId,
         bool _consolidate
-    ) external {
+    ) external notFrozen {
         if (_amount < 1) revert NonPositiveAmount();
         if (timelocks[msg.sender].length >= 600) revert TooManyDeposits();
         if (numOfRanks < 1) revert NoRanks();
@@ -146,7 +159,7 @@ contract AgoraSpace is Ownable {
     /// @dev For burning stakeTokens, this contract should be the owner of them
     /// @param _amount The amount to be withdrawn in the smallest unit of the token
     /// @param _rankId The id of the rank to be withdrawn from
-    function withdraw(uint256 _amount, uint256 _rankId) external {
+    function withdraw(uint256 _amount, uint256 _rankId) external notFrozen {
         if (_amount < 1) revert NonPositiveAmount();
         uint256 expired = viewExpired(msg.sender, _rankId);
         if (rankBalances[_rankId][msg.sender].unlocked + expired < _amount)
@@ -249,7 +262,6 @@ contract AgoraSpace is Ownable {
             rankBalances[_rankId][_investor].locked -
             _amount;
         uint256 totalBalanceBelow;
-
         uint256 lockedBalance;
         uint256 unlockedBalance;
 
@@ -305,5 +317,48 @@ contract AgoraSpace is Ownable {
     /// @return An array containing structs with fields "expires", "amount" and "rankId"
     function getTimelocks(address _wallet) external view returns (LockedItem[] memory) {
         return timelocks[_wallet];
+    }
+
+    /// @notice Disables the deposit and withdraw functions and enables emergencyWithdraw
+    function freezeSpace() external onlyOwner notFrozen {
+        frozen = true;
+        emit SpaceFrozen();
+    }
+
+    /// @notice Returns the contract into the normal state
+    /// @dev Can only be called when the contract is frozen
+    function thawSpace() external onlyOwner {
+        if (!frozen) revert SpaceIsNotFrozen();
+        frozen = false;
+        emit SpaceThawed();
+    }
+
+    /// @notice Gives back all the staked tokens in exchange for the tokens obtained, regardless of timelock.
+    /// @dev Can only be called when the contract is frozen
+    function emergencyWithdraw() external {
+        if (!frozen) revert SpaceIsNotFrozen();
+
+        uint256 totalBalance;
+        uint256 lockedBalance;
+        uint256 unlockedBalance;
+
+        for (uint256 i = 0; i < numOfRanks; i++) {
+            lockedBalance = rankBalances[i][msg.sender].locked;
+            unlockedBalance = rankBalances[i][msg.sender].unlocked;
+
+            if (lockedBalance > 0) {
+                totalBalance += lockedBalance;
+                rankBalances[i][msg.sender].locked = 0;
+            }
+
+            if (unlockedBalance > 0) {
+                totalBalance += unlockedBalance;
+                rankBalances[i][msg.sender].unlocked = 0;
+            }
+        }
+        delete timelocks[msg.sender];
+        IAgoraToken(stakeToken).burn(msg.sender, totalBalance);
+        IERC20(token).transfer(msg.sender, totalBalance);
+        emit EmergencyWithdraw(msg.sender, totalBalance);
     }
 }
