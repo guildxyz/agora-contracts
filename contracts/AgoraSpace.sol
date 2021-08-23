@@ -335,7 +335,7 @@ contract AgoraSpace is Ownable {
 
     /// @notice Gives back all the staked tokens in exchange for the tokens obtained, regardless of timelock.
     /// @dev Can only be called when the contract is frozen
-    function emergencyWithdraw() external {
+    function emergencyWithdraw() external returns (uint256) {
         if (!frozen) revert SpaceIsNotFrozen();
 
         uint256 totalBalance;
@@ -356,9 +356,13 @@ contract AgoraSpace is Ownable {
                 rankBalances[i][msg.sender].unlocked = 0;
             }
         }
+        if (totalBalance < 1) revert NonPositiveAmount();
+
         delete timelocks[msg.sender];
         IAgoraToken(stakeToken).burn(msg.sender, totalBalance);
         IERC20(token).transfer(msg.sender, totalBalance);
         emit EmergencyWithdraw(msg.sender, totalBalance);
+
+        return totalBalance;
     }
 }
