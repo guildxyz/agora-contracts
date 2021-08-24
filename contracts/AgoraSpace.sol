@@ -11,7 +11,7 @@ contract AgoraSpace is Ownable {
     address public immutable stakeToken;
 
     // For emergencies
-    bool public frozen = false;
+    bool public frozen;
 
     // For timelock
     mapping(address => LockedItem[]) internal timelocks;
@@ -131,7 +131,7 @@ contract AgoraSpace is Ownable {
         bool _consolidate
     ) external notFrozen {
         if (_amount < 1) revert NonPositiveAmount();
-        if (timelocks[msg.sender].length >= 600) revert TooManyDeposits();
+        if (timelocks[msg.sender].length >= 64) revert TooManyDeposits();
         if (numOfRanks < 1) revert NoRanks();
         if (_rankId >= numOfRanks) revert InvalidRank();
         if (
@@ -193,8 +193,10 @@ contract AgoraSpace is Ownable {
         }
         // Move expired amounts from locked to unlocked
         for (uint256 i = 0; i < numOfRanks; i++) {
-            rankBalances[i][_investor].locked -= expired[i];
-            rankBalances[i][_investor].unlocked += expired[i];
+            if (expired[i] > 0) {
+                rankBalances[i][_investor].locked -= expired[i];
+                rankBalances[i][_investor].unlocked += expired[i];
+            }
         }
     }
 

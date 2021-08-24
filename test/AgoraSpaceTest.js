@@ -116,11 +116,11 @@ contract("AgoraSpace", async function (accounts) {
       await expectRevert.unspecified(this.space.deposit(0, 0, false, { from: accounts[0] }));
     });
 
-    xit("should not allow depositing more than 600 times", async function () {
+    it("should not allow depositing more than 64 times", async function () {
       const deposits = [];
-      for (let i = 0; i < 600; i++) deposits.push(this.space.deposit(1, 0, false, { from: accounts[2] }));
+      for (let i = 0; i < 64; i++) deposits.push(this.space.deposit(1, 0, false, { from: accounts[2] }));
       await Promise.all(deposits);
-      await expectRevert.unspecified(this.space.deposit(1, { from: accounts[2] }));
+      await expectRevert.unspecified(this.space.deposit(1, 0, false, { from: accounts[2] }));
     });
 
     it("should set the timelock correctly (3 attempts)", async function () {

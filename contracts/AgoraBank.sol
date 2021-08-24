@@ -61,7 +61,7 @@ contract AgoraBank is Ownable {
         // Modify tne stake details
         stakeData.amount -= _amount; // Will revert if the user tries to withdraw more than staked
         totalStakes -= _amount;
-        // // Actually send the withdraw amount
+        // Actually send the withdraw amount
         IAgoraToken(agoAddress).transfer(msg.sender, _amount);
         emit Withdraw(_communityId, msg.sender, _amount);
     }
