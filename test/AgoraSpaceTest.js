@@ -42,6 +42,11 @@ contract("AgoraSpace", async function (accounts) {
       const result = await this.space.stakeToken();
       expect(result).to.equal(this.stakeToken.address);
     });
+
+    it("should not be frozen", async function () {
+      const result = await this.space.frozen();
+      expect(result).to.be.false;
+    });
   });
 
   context("Rank management", async function () {
@@ -251,6 +256,126 @@ contract("AgoraSpace", async function (accounts) {
     it("should emit a Withdraw event", async function () {
       const result = await this.space.withdraw(this.oneToken, 2, { from: accounts[1] });
       expectEvent(result, "Withdraw", { wallet: accounts[1], amount: this.oneToken });
+    });
+  });
+
+  context("freeze space", async function () {
+    it("should not allow emergency withdraw when not fozen ", async function () {
+      await expectRevert.unspecified(this.space.emergencyWithdraw({ from: accounts[0] }));
+    });
+
+    it("should revert if not the owner is trying to freeze the contract", async function () {
+      await expectRevert(this.space.freezeSpace(true, { from: accounts[2] }), "Ownable: caller is not the owner");
+    });
+
+    it("should emit a SpaceFrozenState event", async function () {
+      const result = await this.space.freezeSpace(true, { from: accounts[0] });
+      expectEvent(result, "SpaceFrozenState", { frozen: true });
+    });
+
+    it("should freeze the contract", async function () {
+      const result = await this.space.frozen();
+      expect(result).to.be.true;
+    });
+
+    it("should not allow deposit when fozen ", async function () {
+      await expectRevert.unspecified(this.space.deposit(this.oneToken, 0, false, { from: accounts[0] }));
+    });
+
+    it("should not allow withdraw when fozen ", async function () {
+      await expectRevert.unspecified(this.space.withdraw(this.oneToken, 0, { from: accounts[0] }));
+    });
+
+    it("should allow emergency withdraw when fozen", async function () {
+      await this.space.emergencyWithdraw({ from: accounts[0] });
+    });
+
+    it("should allow to add new ranks when fozen", async function () {
+      await this.space.addRank(4, ether("3"), { from: accounts[0] });
+    });
+
+    it("should allow to modify ranks when fozen", async function () {
+      await this.space.modifyRank(4, ether("4"), 3, { from: accounts[0] });
+    });
+  });
+
+  context("emergency withdraw", async function () {
+    it("should revert if balance is zero ", async function () {
+      await expectRevert.unspecified(this.space.emergencyWithdraw({ from: accounts[0] }));
+    });
+
+    it("should remove tokens", async function () {
+      await this.space.freezeSpace(false, { from: accounts[0] });
+      await this.space.deposit(this.oneToken, 0, false, { from: accounts[0] });
+      const rankBalance0 = await this.space.rankBalances(0, accounts[0]);
+      expect(rankBalance0.locked).to.bignumber.be.greaterThan(new BN(0));
+      await this.space.freezeSpace(true, { from: accounts[0] });
+      await this.space.emergencyWithdraw({ from: accounts[0] });
+      const newRankBalance0 = await this.space.rankBalances(0, accounts[0]);
+      expect(newRankBalance0.unlocked).to.bignumber.equal(new BN(0));
+    });
+
+    it("should burn stakeTokens", async function () {
+      await this.space.freezeSpace(false, { from: accounts[0] });
+      await this.space.deposit(this.oneToken, 0, false, { from: accounts[0] });
+      await this.space.freezeSpace(true, { from: accounts[0] });
+      const oldBalance = await this.stakeToken.balanceOf(accounts[0]);
+      await this.space.emergencyWithdraw({ from: accounts[0] });
+      const newBalance = await this.stakeToken.balanceOf(accounts[0]);
+      expect(oldBalance).to.bignumber.equal(this.oneToken);
+      expect(newBalance).to.bignumber.equal(new BN(0));
+    });
+
+    it("should transfer tokens to the withdrawer", async function () {
+      await this.space.freezeSpace(false, { from: accounts[0] });
+      await this.space.deposit(this.oneToken, 0, false, { from: accounts[0] });
+      await this.space.freezeSpace(true, { from: accounts[0] });
+      const oldBalance = await this.token.balanceOf(accounts[0]);
+      await this.space.emergencyWithdraw({ from: accounts[0] });
+      const newBalance = await this.token.balanceOf(accounts[0]);
+      expect(newBalance.sub(oldBalance)).to.bignumber.equal(this.oneToken);
+    });
+
+    it("should emit an EmergencyWithdraw event", async function () {
+      await this.space.freezeSpace(false, { from: accounts[0] });
+      await this.space.deposit(this.oneToken, 0, false, { from: accounts[0] });
+      await this.space.freezeSpace(true, { from: accounts[0] });
+      const result = await this.space.emergencyWithdraw({ from: accounts[0] });
+      expectEvent(result, "EmergencyWithdraw", { wallet: accounts[0], amount: this.oneToken });
+    });
+  });
+
+  context("thaw space", async function () {
+    it("should revert if not the owner is trying to thaw the contract", async function () {
+      await expectRevert(this.space.freezeSpace(false, { from: accounts[2] }), "Ownable: caller is not the owner");
+    });
+
+    it("should emit a SpaceFrozenState event", async function () {
+      const result = await this.space.freezeSpace(false, { from: accounts[0] });
+      expectEvent(result, "SpaceFrozenState", { frozen: false });
+    });
+
+    it("should unfreeze the contract", async function () {
+      const result = await this.space.frozen();
+      expect(result).to.be.false;
+    });
+
+    it("should revert when not fozen ", async function () {
+      await expectRevert.unspecified(this.space.freezeSpace(false, { from: accounts[0] }));
+    });
+
+    it("should enable deposit", async function () {
+      await this.space.deposit(this.oneToken.mul(new BN(2)), 0, false, { from: accounts[0] });
+    });
+
+    it("should enable withdraw", async function () {
+      const rank0 = await this.space.ranks(0);
+      time.increase(rank0.minDuration * 60);
+      await this.space.withdraw(this.oneToken, 0, { from: accounts[0] });
+    });
+
+    it("should disable emergency withdraw", async function () {
+      await expectRevert.unspecified(this.space.emergencyWithdraw({ from: accounts[0] }));
     });
   });
 });

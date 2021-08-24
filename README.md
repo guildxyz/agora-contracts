@@ -16,9 +16,12 @@ To run the project you need:
 
 Your `.env` file should contain any of the following:
 
-- Your 12-word MetaMask seedphrase for deploying. e.g. MNEMONIC='seedphrase'
-- Your [Infura](https://infura.io) project ID for deploying to Ethereum networks. e.g. INFURA_ID='id'
-- Your API keys for verification. e.g. ETHERSCAN_API_KEY='api key'
+- Your 12-word MetaMask seedphrase for deploying.
+  `MNEMONIC='seedphrase'`
+- Your [Infura](https://infura.io) project ID for deploying to Ethereum networks.
+  `INFURA_ID='id'`
+- Your API keys for verification.
+  `ETHERSCAN_API_KEY='api key'`
 
 ## Before deployment
 

@@ -10,6 +10,9 @@ contract AgoraSpace is Ownable {
     address public immutable token;
     address public immutable stakeToken;
 
+    // For emergencies
+    bool public frozen = false;
+
     // For timelock
     mapping(address => LockedItem[]) internal timelocks;
 
@@ -42,6 +45,8 @@ contract AgoraSpace is Ownable {
     event Withdraw(address indexed wallet, uint256 amount);
     event NewRank(uint256 minDuration, uint256 goalAmount, uint256 id);
     event ModifyRank(uint256 minDuration, uint256 goalAmount, uint256 id);
+    event SpaceFrozenState(bool frozen);
+    event EmergencyWithdraw(address indexed wallet, uint256 amount);
 
     error InsufficientBalance(uint256 rankId, uint256 available, uint256 required);
     error TooManyRanks();
@@ -53,6 +58,13 @@ contract AgoraSpace is Ownable {
     error NewGoalTooBig(uint256 value, uint256 maxValue);
     error TooManyDeposits();
     error NonPositiveAmount();
+    error SpaceIsFrozen();
+    error SpaceIsNotFrozen();
+
+    modifier notFrozen() {
+        if (frozen) revert SpaceIsFrozen();
+        _;
+    }
 
     /// @param _tokenAddress The address of the token to be staked, that the contract accepts
     /// @param _stakeTokenAddress The address of the token that's given in return
@@ -117,7 +129,7 @@ contract AgoraSpace is Ownable {
         uint256 _amount,
         uint256 _rankId,
         bool _consolidate
-    ) external {
+    ) external notFrozen {
         if (_amount < 1) revert NonPositiveAmount();
         if (timelocks[msg.sender].length >= 600) revert TooManyDeposits();
         if (numOfRanks < 1) revert NoRanks();
@@ -146,7 +158,7 @@ contract AgoraSpace is Ownable {
     /// @dev For burning stakeTokens, this contract should be the owner of them
     /// @param _amount The amount to be withdrawn in the smallest unit of the token
     /// @param _rankId The id of the rank to be withdrawn from
-    function withdraw(uint256 _amount, uint256 _rankId) external {
+    function withdraw(uint256 _amount, uint256 _rankId) external notFrozen {
         if (_amount < 1) revert NonPositiveAmount();
         uint256 expired = viewExpired(msg.sender, _rankId);
         if (rankBalances[_rankId][msg.sender].unlocked + expired < _amount)
@@ -186,22 +198,6 @@ contract AgoraSpace is Ownable {
         }
     }
 
-    /// @notice Sums the locked tokens for an account by ranks if they were expired
-    /// @param _investor The address whose tokens should be checked
-    /// @param _rankId The id of the rank to be checked
-    /// @return The total amount of expired, but not unlocked tokens in the rank
-    function viewExpired(address _investor, uint256 _rankId) public view returns (uint256) {
-        uint256 expiredAmount;
-        LockedItem[] memory usersLocked = timelocks[_investor];
-        uint256 usersLockedLength = usersLocked.length;
-        for (uint256 i = 0; i < usersLockedLength; i++) {
-            if (usersLocked[i].rankId == _rankId && usersLocked[i].expires <= block.timestamp) {
-                expiredAmount += usersLocked[i].amount;
-            }
-        }
-        return expiredAmount;
-    }
-
     /// @notice Unlocks every deposit below a certain rank
     /// @dev Should be called, when the minimum of a rank is reached
     /// @param _investor The address whose tokens should be checked
@@ -210,25 +206,23 @@ contract AgoraSpace is Ownable {
         LockedItem[] storage usersLocked = timelocks[_investor];
         int256 usersLockedLength = int256(usersLocked.length);
         uint256[] memory unlocked = new uint256[](numOfRanks);
-        for (uint256 i = 0; i < _rankId; i++) {
-            if (rankBalances[i][_investor].locked > 0) {
-                for (int256 j = 0; j < usersLockedLength; j++) {
-                    if (usersLocked[uint256(j)].rankId < _rankId) {
-                        // Collect the amount to be unlocked per rank
-                        unlocked[usersLocked[uint256(j)].rankId] += usersLocked[uint256(j)].amount;
-                        // Remove expired locks
-                        usersLocked[uint256(j)] = usersLocked[uint256(usersLockedLength) - 1];
-                        usersLocked.pop();
-                        usersLockedLength--;
-                        j--;
-                    }
-                }
+        for (int256 i = 0; i < usersLockedLength; i++) {
+            if (usersLocked[uint256(i)].rankId < _rankId) {
+                // Collect the amount to be unlocked per rank
+                unlocked[usersLocked[uint256(i)].rankId] += usersLocked[uint256(i)].amount;
+                // Remove expired locks
+                usersLocked[uint256(i)] = usersLocked[uint256(usersLockedLength) - 1];
+                usersLocked.pop();
+                usersLockedLength--;
+                i--;
             }
         }
         // Move unlocked amounts from locked to unlocked
         for (uint256 i = 0; i < numOfRanks; i++) {
-            rankBalances[i][_investor].locked -= unlocked[i];
-            rankBalances[i][_investor].unlocked += unlocked[i];
+            if (unlocked[i] > 0) {
+                rankBalances[i][_investor].locked -= unlocked[i];
+                rankBalances[i][_investor].unlocked += unlocked[i];
+            }
         }
     }
 
@@ -249,7 +243,6 @@ contract AgoraSpace is Ownable {
             rankBalances[_rankId][_investor].locked -
             _amount;
         uint256 totalBalanceBelow;
-
         uint256 lockedBalance;
         uint256 unlockedBalance;
 
@@ -300,10 +293,70 @@ contract AgoraSpace is Ownable {
         }
     }
 
+    /// @notice Disables the deposit and withdraw functions and enables emergencyWithdraw if input is true
+    /// @notice Enables the deposit and withdraw functions and disables emergencyWithdraw if input is false
+    /// @dev function call must change the state of the contract
+    /// @param _frozen The new state of the contract
+    function freezeSpace(bool _frozen) external onlyOwner {
+        if (!frozen && !_frozen) revert SpaceIsNotFrozen();
+        if (frozen && _frozen) revert SpaceIsFrozen();
+        frozen = _frozen;
+        emit SpaceFrozenState(frozen);
+    }
+
+    /// @notice Gives back all the staked tokens in exchange for the tokens obtained, regardless of timelock.
+    /// @dev Can only be called when the contract is frozen
+    function emergencyWithdraw() external returns (uint256) {
+        if (!frozen) revert SpaceIsNotFrozen();
+
+        uint256 totalBalance;
+        uint256 lockedBalance;
+        uint256 unlockedBalance;
+
+        for (uint256 i = 0; i < numOfRanks; i++) {
+            lockedBalance = rankBalances[i][msg.sender].locked;
+            unlockedBalance = rankBalances[i][msg.sender].unlocked;
+
+            if (lockedBalance > 0) {
+                totalBalance += lockedBalance;
+                rankBalances[i][msg.sender].locked = 0;
+            }
+
+            if (unlockedBalance > 0) {
+                totalBalance += unlockedBalance;
+                rankBalances[i][msg.sender].unlocked = 0;
+            }
+        }
+        if (totalBalance < 1) revert NonPositiveAmount();
+
+        delete timelocks[msg.sender];
+        IAgoraToken(stakeToken).burn(msg.sender, totalBalance);
+        IERC20(token).transfer(msg.sender, totalBalance);
+        emit EmergencyWithdraw(msg.sender, totalBalance);
+
+        return totalBalance;
+    }
+
     /// @notice Returns all the timelocks a user has in an array
     /// @param _wallet The address of the user
     /// @return An array containing structs with fields "expires", "amount" and "rankId"
     function getTimelocks(address _wallet) external view returns (LockedItem[] memory) {
         return timelocks[_wallet];
+    }
+
+    /// @notice Sums the locked tokens for an account by ranks if they were expired
+    /// @param _investor The address whose tokens should be checked
+    /// @param _rankId The id of the rank to be checked
+    /// @return The total amount of expired, but not unlocked tokens in the rank
+    function viewExpired(address _investor, uint256 _rankId) public view returns (uint256) {
+        uint256 expiredAmount;
+        LockedItem[] memory usersLocked = timelocks[_investor];
+        uint256 usersLockedLength = usersLocked.length;
+        for (uint256 i = 0; i < usersLockedLength; i++) {
+            if (usersLocked[i].rankId == _rankId && usersLocked[i].expires <= block.timestamp) {
+                expiredAmount += usersLocked[i].amount;
+            }
+        }
+        return expiredAmount;
     }
 }
