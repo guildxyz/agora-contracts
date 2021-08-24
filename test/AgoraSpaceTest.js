@@ -268,9 +268,9 @@ contract("AgoraSpace", async function (accounts) {
       await expectRevert(this.space.freezeSpace({ from: accounts[2] }), "Ownable: caller is not the owner");
     });
 
-    it("should emit a SpaceFrozen event", async function () {
+    it("should emit a SpaceFrozenState event", async function () {
       const result = await this.space.freezeSpace({ from: accounts[0] });
-      expectEvent(result, "SpaceFrozen");
+      expectEvent(result, "SpaceFrozenState", { frozen: true });
     });
 
     it("should freeze the contract", async function () {
@@ -350,9 +350,9 @@ contract("AgoraSpace", async function (accounts) {
       await expectRevert(this.space.thawSpace({ from: accounts[2] }), "Ownable: caller is not the owner");
     });
 
-    it("should emit a SpaceThawed event", async function () {
+    it("should emit a SpaceFrozenState event", async function () {
       const result = await this.space.thawSpace({ from: accounts[0] });
-      expectEvent(result, "SpaceThawed");
+      expectEvent(result, "SpaceFrozenState", { frozen: false });
     });
 
     it("should unfreeze the contract", async function () {
