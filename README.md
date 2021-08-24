@@ -66,10 +66,10 @@ Edit them according to your needs.
 
 ## Deployment
 
-To deploy the smart contracts to a network, replace _[name]_ in this command:
+To deploy the smart contracts to a network, replace _[networkName]_ in this command:
 
 ```bash
-truffle migrate --network [name]
+truffle migrate --network [networkName]
 ```
 
 Networks can be configured in _truffle-config.js_. We've preconfigured the following:
@@ -107,7 +107,7 @@ If the script fails before starting the deployment, you might need to run the fi
 For automatic verification you can use [truffle plugin verify](https://github.com/rkalis/truffle-plugin-verify).
 
 ```bash
-truffle run verify AgoraSpace --network ropsten
+truffle run verify [contractName] --network [networkName]
 ```
 
 ### Agora Member Token contract

@@ -260,7 +260,7 @@ contract("AgoraSpace", async function (accounts) {
   });
 
   context("freeze space", async function () {
-    it("should not allow emergency withdraw when not fozen ", async function () {
+    it("should not allow emergency withdraw when not fozen", async function () {
       await expectRevert.unspecified(this.space.emergencyWithdraw({ from: accounts[0] }));
     });
 
@@ -278,11 +278,11 @@ contract("AgoraSpace", async function (accounts) {
       expect(result).to.be.true;
     });
 
-    it("should not allow deposit when fozen ", async function () {
+    it("should not allow deposit when fozen", async function () {
       await expectRevert.unspecified(this.space.deposit(this.oneToken, 0, false, { from: accounts[0] }));
     });
 
-    it("should not allow withdraw when fozen ", async function () {
+    it("should not allow withdraw when fozen", async function () {
       await expectRevert.unspecified(this.space.withdraw(this.oneToken, 0, { from: accounts[0] }));
     });
 
@@ -300,7 +300,7 @@ contract("AgoraSpace", async function (accounts) {
   });
 
   context("emergency withdraw", async function () {
-    it("should revert if balance is zero ", async function () {
+    it("should revert if balance is zero", async function () {
       await expectRevert.unspecified(this.space.emergencyWithdraw({ from: accounts[0] }));
     });
 
@@ -360,7 +360,7 @@ contract("AgoraSpace", async function (accounts) {
       expect(result).to.be.false;
     });
 
-    it("should revert when not fozen ", async function () {
+    it("should revert when not fozen", async function () {
       await expectRevert.unspecified(this.space.freezeSpace(false, { from: accounts[0] }));
     });
 

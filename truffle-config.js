@@ -84,7 +84,6 @@ module.exports = {
           providerOrUrl: `https://data-seed-prebsc-1-s1.binance.org:8545`,
           chainId: 97,
         }),
-      from: "0x216c2218eC309312a05b067B5D2DB88c48112CDf",
       network_id: 97,
       gas: 3500000,
       confirmations: 10,
