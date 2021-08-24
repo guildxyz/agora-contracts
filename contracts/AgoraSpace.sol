@@ -293,17 +293,14 @@ contract AgoraSpace is Ownable {
         }
     }
 
-    /// @notice Disables the deposit and withdraw functions and enables emergencyWithdraw
-    function freezeSpace() external onlyOwner notFrozen {
-        frozen = true;
-        emit SpaceFrozenState(frozen);
-    }
-
-    /// @notice Returns the contract into the normal state
-    /// @dev Can only be called when the contract is frozen
-    function thawSpace() external onlyOwner {
-        if (!frozen) revert SpaceIsNotFrozen();
-        frozen = false;
+    /// @notice Disables the deposit and withdraw functions and enables emergencyWithdraw if input is true
+    /// @notice Enables the deposit and withdraw functions and disables emergencyWithdraw if input is false
+    /// @dev function call must change the state of the contract
+    /// @param _frozen The new state of the contract
+    function freezeSpace(bool _frozen) external onlyOwner {
+        if (!frozen && !_frozen) revert SpaceIsNotFrozen();
+        if (frozen && _frozen) revert SpaceIsFrozen();
+        frozen = _frozen;
         emit SpaceFrozenState(frozen);
     }
 

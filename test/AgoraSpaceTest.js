@@ -265,11 +265,11 @@ contract("AgoraSpace", async function (accounts) {
     });
 
     it("should revert if not the owner is trying to freeze the contract", async function () {
-      await expectRevert(this.space.freezeSpace({ from: accounts[2] }), "Ownable: caller is not the owner");
+      await expectRevert(this.space.freezeSpace(true, { from: accounts[2] }), "Ownable: caller is not the owner");
     });
 
     it("should emit a SpaceFrozenState event", async function () {
-      const result = await this.space.freezeSpace({ from: accounts[0] });
+      const result = await this.space.freezeSpace(true, { from: accounts[0] });
       expectEvent(result, "SpaceFrozenState", { frozen: true });
     });
 
@@ -305,20 +305,20 @@ contract("AgoraSpace", async function (accounts) {
     });
 
     it("should remove tokens", async function () {
-      await this.space.thawSpace({ from: accounts[0] });
+      await this.space.freezeSpace(false, { from: accounts[0] });
       await this.space.deposit(this.oneToken, 0, false, { from: accounts[0] });
       const rankBalance0 = await this.space.rankBalances(0, accounts[0]);
       expect(rankBalance0.locked).to.bignumber.be.greaterThan(new BN(0));
-      await this.space.freezeSpace({ from: accounts[0] });
+      await this.space.freezeSpace(true, { from: accounts[0] });
       await this.space.emergencyWithdraw({ from: accounts[0] });
       const newRankBalance0 = await this.space.rankBalances(0, accounts[0]);
       expect(newRankBalance0.unlocked).to.bignumber.equal(new BN(0));
     });
 
     it("should burn stakeTokens", async function () {
-      await this.space.thawSpace({ from: accounts[0] });
+      await this.space.freezeSpace(false, { from: accounts[0] });
       await this.space.deposit(this.oneToken, 0, false, { from: accounts[0] });
-      await this.space.freezeSpace({ from: accounts[0] });
+      await this.space.freezeSpace(true, { from: accounts[0] });
       const oldBalance = await this.stakeToken.balanceOf(accounts[0]);
       await this.space.emergencyWithdraw({ from: accounts[0] });
       const newBalance = await this.stakeToken.balanceOf(accounts[0]);
@@ -327,9 +327,9 @@ contract("AgoraSpace", async function (accounts) {
     });
 
     it("should transfer tokens to the withdrawer", async function () {
-      await this.space.thawSpace({ from: accounts[0] });
+      await this.space.freezeSpace(false, { from: accounts[0] });
       await this.space.deposit(this.oneToken, 0, false, { from: accounts[0] });
-      await this.space.freezeSpace({ from: accounts[0] });
+      await this.space.freezeSpace(true, { from: accounts[0] });
       const oldBalance = await this.token.balanceOf(accounts[0]);
       await this.space.emergencyWithdraw({ from: accounts[0] });
       const newBalance = await this.token.balanceOf(accounts[0]);
@@ -337,9 +337,9 @@ contract("AgoraSpace", async function (accounts) {
     });
 
     it("should emit an EmergencyWithdraw event", async function () {
-      await this.space.thawSpace({ from: accounts[0] });
+      await this.space.freezeSpace(false, { from: accounts[0] });
       await this.space.deposit(this.oneToken, 0, false, { from: accounts[0] });
-      await this.space.freezeSpace({ from: accounts[0] });
+      await this.space.freezeSpace(true, { from: accounts[0] });
       const result = await this.space.emergencyWithdraw({ from: accounts[0] });
       expectEvent(result, "EmergencyWithdraw", { wallet: accounts[0], amount: this.oneToken });
     });
@@ -347,11 +347,11 @@ contract("AgoraSpace", async function (accounts) {
 
   context("thaw space", async function () {
     it("should revert if not the owner is trying to thaw the contract", async function () {
-      await expectRevert(this.space.thawSpace({ from: accounts[2] }), "Ownable: caller is not the owner");
+      await expectRevert(this.space.freezeSpace(false, { from: accounts[2] }), "Ownable: caller is not the owner");
     });
 
     it("should emit a SpaceFrozenState event", async function () {
-      const result = await this.space.thawSpace({ from: accounts[0] });
+      const result = await this.space.freezeSpace(false, { from: accounts[0] });
       expectEvent(result, "SpaceFrozenState", { frozen: false });
     });
 
@@ -361,7 +361,7 @@ contract("AgoraSpace", async function (accounts) {
     });
 
     it("should revert when not fozen ", async function () {
-      await expectRevert.unspecified(this.space.thawSpace({ from: accounts[0] }));
+      await expectRevert.unspecified(this.space.freezeSpace(false, { from: accounts[0] }));
     });
 
     it("should enable deposit", async function () {
