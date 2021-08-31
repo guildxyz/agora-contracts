@@ -225,6 +225,17 @@ contract("AgoraSpace", async function (accounts) {
       await expectRevert.unspecified(this.space.withdraw(this.oneToken, 2, { from: accounts[1] }));
     });
 
+    it("should unlock expired tokens", async function () {
+      const rank2 = await this.space.ranks(2);
+      await this.space.deposit(this.oneToken, 2, false, { from: accounts[1] });
+      const rankBalance2 = await this.space.rankBalances(2, accounts[1]);
+      time.increase(rank2.minDuration * 60);
+      await this.space.unlockExpired(accounts[1], { from: accounts[0] });
+      const newRankBalance2 = await this.space.rankBalances(2, accounts[1]);
+      expect(newRankBalance2.locked).to.bignumber.equal(new BN(0));
+      expect(newRankBalance2.unlocked).to.bignumber.equal(rankBalance2.locked.add(rankBalance2.unlocked));
+    });
+
     it("should not revert after the tokens are expired", async function () {
       const rank2 = await this.space.ranks(2);
       await this.space.deposit(this.oneToken, 2, false, { from: accounts[1] });
