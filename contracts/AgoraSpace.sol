@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "../token/IAgoraToken.sol";
-import "./RankManager.sol";
+import "./token/IAgoraToken.sol";
+import "./AgoraSpace_utils/RankManager.sol";
 
 /// @title A contract for staking tokens
 contract AgoraSpace is RankManager {
