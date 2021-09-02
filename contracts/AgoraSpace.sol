@@ -2,16 +2,13 @@
 pragma solidity 0.8.7;
 
 import "./token/IAgoraToken.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "./AgoraSpace_utils/RankManager.sol";
 
 /// @title A contract for staking tokens
-contract AgoraSpace is Ownable {
+contract AgoraSpace is RankManager {
     // Tokens managed by the contract
     address public immutable token;
     address public immutable stakeToken;
-
-    // For emergencies
-    bool public frozen;
 
     // For timelock
     mapping(address => LockedItem[]) internal timelocks;
@@ -22,101 +19,27 @@ contract AgoraSpace is Ownable {
         uint256 rankId;
     }
 
-    // For ranking
-    uint256 public numOfRanks;
-
-    struct Rank {
-        uint256 minDuration;
-        uint256 goalAmount;
-    }
-
     // For storing balances
     struct Balance {
         uint256 locked;
         uint256 unlocked;
     }
 
-    // Bigger id equals higher rank
-    mapping(uint256 => Rank) public ranks;
-
     mapping(uint256 => mapping(address => Balance)) public rankBalances;
 
     event Deposit(address indexed wallet, uint256 amount);
     event Withdraw(address indexed wallet, uint256 amount);
-    event NewRank(uint256 minDuration, uint256 goalAmount, uint256 id);
-    event ModifyRank(uint256 minDuration, uint256 goalAmount, uint256 id);
-    event SpaceFrozenState(bool frozen);
     event EmergencyWithdraw(address indexed wallet, uint256 amount);
 
     error InsufficientBalance(uint256 rankId, uint256 available, uint256 required);
-    error TooManyRanks();
-    error NoRanks();
-    error InvalidRank();
-    error NewDurationTooShort(uint256 value, uint256 minValue);
-    error NewDurationTooLong(uint256 value, uint256 maxValue);
-    error NewGoalTooSmall(uint256 value, uint256 minValue);
-    error NewGoalTooBig(uint256 value, uint256 maxValue);
     error TooManyDeposits();
     error NonPositiveAmount();
-    error SpaceIsFrozen();
-    error SpaceIsNotFrozen();
-
-    modifier notFrozen() {
-        if (frozen) revert SpaceIsFrozen();
-        _;
-    }
 
     /// @param _tokenAddress The address of the token to be staked, that the contract accepts
     /// @param _stakeTokenAddress The address of the token that's given in return
     constructor(address _tokenAddress, address _stakeTokenAddress) {
         token = _tokenAddress;
         stakeToken = _stakeTokenAddress;
-    }
-
-    /// @notice Creates a new rank
-    /// @dev Only the new highest rank can be added
-    /// @dev The goal amount and the lock time can't be lower than in the previous rank
-    /// @param _minDuration The duration of the lock
-    /// @param _goalAmount The amount of tokens needed to reach the rank
-    function addRank(uint256 _minDuration, uint256 _goalAmount) external onlyOwner {
-        if (numOfRanks >= 255) revert TooManyRanks();
-        if (numOfRanks >= 1) {
-            if (ranks[numOfRanks - 1].goalAmount > _goalAmount)
-                revert NewGoalTooSmall({value: _goalAmount, minValue: ranks[numOfRanks - 1].goalAmount});
-            if (ranks[numOfRanks - 1].minDuration > _minDuration)
-                revert NewDurationTooShort({value: _minDuration, minValue: ranks[numOfRanks - 1].minDuration});
-        }
-        ranks[numOfRanks] = (Rank(_minDuration, _goalAmount));
-        emit NewRank(_minDuration, _goalAmount, numOfRanks);
-        numOfRanks++;
-    }
-
-    /// @notice Modifies a rank
-    /// @dev Values must be between the previous and the next ranks'
-    /// @param _minDuration New duration of the lock
-    /// @param _goalAmount New amount of tokens needed to reach the rank
-    /// @param _id The id of the rank to be modified
-    function modifyRank(
-        uint256 _minDuration,
-        uint256 _goalAmount,
-        uint256 _id
-    ) external onlyOwner {
-        if (numOfRanks < 1) revert NoRanks();
-        if (_id >= numOfRanks) revert InvalidRank();
-        if (_id > 0) {
-            if (ranks[_id - 1].goalAmount > _goalAmount)
-                revert NewGoalTooSmall({value: _goalAmount, minValue: ranks[numOfRanks - 1].goalAmount});
-            if (ranks[numOfRanks - 1].minDuration > _minDuration)
-                revert NewDurationTooShort({value: _minDuration, minValue: ranks[numOfRanks - 1].minDuration});
-        }
-        if (_id < numOfRanks - 1) {
-            if (ranks[_id + 1].goalAmount < _goalAmount)
-                revert NewGoalTooBig({value: _goalAmount, maxValue: ranks[_id + 1].goalAmount});
-            if (ranks[_id + 1].minDuration < _minDuration)
-                revert NewDurationTooLong({value: _minDuration, maxValue: ranks[_id + 1].minDuration});
-        }
-        ranks[_id] = Rank(_minDuration, _goalAmount);
-        emit ModifyRank(_minDuration, _goalAmount, _id);
     }
 
     /// @notice Accepts tokens, locks them and gives different tokens in return
@@ -176,7 +99,7 @@ contract AgoraSpace is Ownable {
 
     /// @notice Checks the locked tokens for an account and unlocks them if they're expired
     /// @param _investor The address whose tokens should be checked
-    function unlockExpired(address _investor) internal {
+    function unlockExpired(address _investor) public {
         uint256[] memory expired = new uint256[](numOfRanks);
         LockedItem[] storage usersLocked = timelocks[_investor];
         int256 usersLockedLength = int256(usersLocked.length);
@@ -293,17 +216,6 @@ contract AgoraSpace is Ownable {
             }
             timelocks[_investor].push(timelockData);
         }
-    }
-
-    /// @notice Disables the deposit and withdraw functions and enables emergencyWithdraw if input is true
-    /// @notice Enables the deposit and withdraw functions and disables emergencyWithdraw if input is false
-    /// @dev function call must change the state of the contract
-    /// @param _frozen The new state of the contract
-    function freezeSpace(bool _frozen) external onlyOwner {
-        if (!frozen && !_frozen) revert SpaceIsNotFrozen();
-        if (frozen && _frozen) revert SpaceIsFrozen();
-        frozen = _frozen;
-        emit SpaceFrozenState(frozen);
     }
 
     /// @notice Gives back all the staked tokens in exchange for the tokens obtained, regardless of timelock
