@@ -76,6 +76,7 @@ Networks can be configured in _truffle-config.js_. We've preconfigured the follo
 
 - `development` (for local testing)
 - `ethereum` (Ethereum Mainnet)
+- `goerli` (Görli Ethereum Testnet)
 - `kovan` (Kovan Ethereum Testnet)
 - `ropsten` (Ropsten Ethereum Testnet)
 - `bsc` (Binance Smart Chain)
@@ -121,13 +122,7 @@ The deployment script should automatically transfer it's token's ownership to th
 
 ## Tests
 
-Before running the unit tests written for this project, start Ganache with this command:
-
-```bash
-ganache-cli
-```
-
-To run the unit tests, leave Ganache running and execute this command in a separate terminal:
+To run the unit tests written for this project, execute this command in a terminal:
 
 ```bash
 npm test
