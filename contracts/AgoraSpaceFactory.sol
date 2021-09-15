@@ -17,7 +17,7 @@ contract AgoraSpaceFactory is Ownable {
     error InvalidSignature();
 
     /// @notice Deploys a new Agora Space contract with it's token and registers it in the spaces mapping
-    /// @param _signature A signed message from the owner containing their, the token's and this contract's address
+    /// @param _signature A signed message from the owner containing the community owner's, the token's and this contract's address
     /// @param _token The address of the community's token (that will be deposited to Space)
     function createSpace(bytes memory _signature, address _token) external {
         if (spaces[_token] != address(0)) revert AlreadyExists();
