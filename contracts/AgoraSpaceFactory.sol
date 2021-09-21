@@ -7,24 +7,22 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 /// @title A contract that deploys Agora Space contracts for any community
 contract AgoraSpaceFactory is Ownable {
-    /// @notice EOA => token => approved to deploy?
-    mapping(address => mapping(address => bool)) public approvedAddresses;
-
     /// @notice Token => deployed Space
     mapping(address => address) public spaces;
 
     event SpaceCreated(address token, address space, address agoraToken);
-    event AddressApproved(address indexed account, address token, bool approvalState);
 
     error Unauthorized();
     error AlreadyExists();
-    error ZeroAddress();
+    error InvalidSignature();
 
     /// @notice Deploys a new Agora Space contract with it's token and registers it in the spaces mapping
+    /// @param _signature A signed message from the owner containing the community owner's, the token's and this contract's address
     /// @param _token The address of the community's token (that will be deposited to Space)
-    function createSpace(address _token) external {
-        if (!approvedAddresses[msg.sender][_token]) revert Unauthorized();
+    function createSpace(bytes memory _signature, address _token) external {
         if (spaces[_token] != address(0)) revert AlreadyExists();
+        bytes32 message = prefixed(keccak256(abi.encode(msg.sender, _token, address(this)))); // Recreate the signed message
+        if (recoverSigner(message, _signature) != owner()) revert Unauthorized();
         string memory tokenSymbol = IERC20Metadata(_token).symbol();
         uint8 tokenDecimals = IERC20Metadata(_token).decimals();
         AgoraToken agoraToken = new AgoraToken(
@@ -39,17 +37,30 @@ contract AgoraSpaceFactory is Ownable {
         emit SpaceCreated(_token, address(agoraSpace), address(agoraToken));
     }
 
-    /// @notice Sets the approval state of an address
-    /// @param _tokenOwner The owner of the token authorized on agora.space
-    /// @param _tokenAddress The address of the token whose owner is being approved
-    /// @param _approvalState Whether to approve or disapprove
-    function setApproval(
-        address _tokenOwner,
-        address _tokenAddress,
-        bool _approvalState
-    ) external onlyOwner {
-        if ((_tokenOwner == address(0)) || (_tokenAddress == address(0))) revert ZeroAddress();
-        approvedAddresses[_tokenOwner][_tokenAddress] = _approvalState;
-        emit AddressApproved(_tokenOwner, _tokenAddress, _approvalState);
+    /// @notice Builds a prefixed hash to mimic the behavior of eth_sign
+    /// @param _hash The hash of the message's content without the prefix
+    /// @return The hash with the prefix
+    function prefixed(bytes32 _hash) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _hash));
+    }
+
+    /// @notice Recovers the address of the signer of the message
+    /// @param _message The prefixed hashed message that we recreated
+    /// @param _sig The signed message that we need to check
+    /// @return The address of the signer
+    function recoverSigner(bytes32 _message, bytes memory _sig) internal pure returns (address) {
+        if (_sig.length != 65) revert InvalidSignature();
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+        assembly {
+            // First 32 bytes, after the length prefix
+            r := mload(add(_sig, 32))
+            // Second 32 bytes
+            s := mload(add(_sig, 64))
+            // Final byte (first byte of the next 32 bytes)
+            v := byte(0, mload(add(_sig, 96)))
+        }
+        return ecrecover(_message, v, r, s);
     }
 }

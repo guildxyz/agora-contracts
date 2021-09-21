@@ -36,6 +36,19 @@ module.exports = {
       timeoutBlocks: 200,
       skipDryRun: true,
     },
+    goerli: {
+      provider: () =>
+        new HDWalletProvider({
+          mnemonic: process.env.MNEMONIC,
+          providerOrUrl: `wss://goerli.infura.io/ws/v3/${process.env.INFURA_ID}`,
+          chainId: 5,
+        }),
+      network_id: 5,
+      gas: 3500000,
+      confirmations: 1,
+      timeoutBlocks: 200,
+      skipDryRun: true,
+    },
     kovan: {
       provider: () =>
         new HDWalletProvider({
