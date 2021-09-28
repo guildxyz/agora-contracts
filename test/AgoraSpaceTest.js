@@ -81,7 +81,8 @@ contract("AgoraSpace", async function (accounts) {
     });
 
     it("should modify rank", async function () {
-      await this.space.modifyRank(2, ether("3"), 2, { from: accounts[0] });
+      const result = await this.space.modifyRank(2, ether("3"), 2, { from: accounts[0] });
+      expect(result.receipt.status).to.be.true;
     });
 
     it("should emit a ModifyRank event", async function () {
@@ -298,15 +299,18 @@ contract("AgoraSpace", async function (accounts) {
     });
 
     it("should allow emergency withdraw when fozen", async function () {
-      await this.space.emergencyWithdraw({ from: accounts[0] });
+      const result = await this.space.emergencyWithdraw({ from: accounts[0] });
+      expect(result.receipt.status).to.be.true;
     });
 
     it("should allow to add new ranks when fozen", async function () {
-      await this.space.addRank(4, ether("3"), { from: accounts[0] });
+      const result = await this.space.addRank(4, ether("3"), { from: accounts[0] });
+      expect(result.receipt.status).to.be.true;
     });
 
     it("should allow to modify ranks when fozen", async function () {
-      await this.space.modifyRank(4, ether("4"), 3, { from: accounts[0] });
+      const result = await this.space.modifyRank(4, ether("4"), 3, { from: accounts[0] });
+      expect(result.receipt.status).to.be.true;
     });
   });
 
@@ -376,13 +380,15 @@ contract("AgoraSpace", async function (accounts) {
     });
 
     it("should enable deposit", async function () {
-      await this.space.deposit(this.oneToken.mul(new BN(2)), 0, false, { from: accounts[0] });
+      const result = await this.space.deposit(this.oneToken.mul(new BN(2)), 0, false, { from: accounts[0] });
+      expect(result.receipt.status).to.be.true;
     });
 
     it("should enable withdraw", async function () {
       const rank0 = await this.space.ranks(0);
       time.increase(rank0.minDuration * 60);
-      await this.space.withdraw(this.oneToken, 0, { from: accounts[0] });
+      const result = await this.space.withdraw(this.oneToken, 0, { from: accounts[0] });
+      expect(result.receipt.status).to.be.true;
     });
 
     it("should disable emergency withdraw", async function () {
