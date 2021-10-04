@@ -1,4 +1,4 @@
-name: Truffle build and test
+name: Truffle compile and test
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  run-tests:
     runs-on: ubuntu-latest
 
     steps:
